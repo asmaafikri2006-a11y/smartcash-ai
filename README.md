@@ -1,8 +1,8 @@
-# 💼 SmartCash AI — Prévision de Trésorerie à Court Terme
+# SmartCash — Prévision de Trésorerie
 
-Bienvenue dans **SmartCash AI**, une application web interactive conçue spécialement pour les étudiants et gestionnaires en **Gestion Financière et Comptable (GFC)**. 
+Bienvenue dans **SmartCash**, une application de tableau de bord financier conçue pour les gestionnaires et étudiants en gestion financière et comptable. 
 
-Elle permet de simuler, prévoir et analyser la trésorerie à court terme d'une entreprise (PME marocaine) en **Dirhams marocains (DH)**, tout en intégrant des visualisations interactives, un modèle de **Machine Learning (IA)** et un système d'alerte tricolore (Vert / Orange / Rouge).
+Elle permet de simuler, prévoir et analyser la trésorerie d'entreprise en **Dirhams marocains (DH)**, tout en intégrant des visualisations interactives adaptées à un environnement sombre professionnel, un modèle de **Machine Learning (Ridge)** et un module d'**analyse et recommandations**.
 
 ---
 

@@ -14,6 +14,12 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
 
+MOIS_FR = {
+    1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
+    5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
+    9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+}
+
 
 class ModelePrevisionTresorerie:
     """
@@ -62,8 +68,8 @@ class ModelePrevisionTresorerie:
         y_dec = df["Total_Decaissements_DH"].values
         
         if SKLEARN_AVAILABLE:
-            self.modele_encaissements = Ridge(alpha=1.0)
-            self.modele_decaissements = Ridge(alpha=1.0)
+            self.modele_encaissements = Ridge(alpha=1.0, random_state=42)
+            self.modele_decaissements = Ridge(alpha=1.0, random_state=42)
             
             self.modele_encaissements.fit(X, y_enc)
             self.modele_decaissements.fit(X, y_dec)
@@ -153,7 +159,7 @@ class ModelePrevisionTresorerie:
             
             previsions.append({
                 "Mois": futur_dt.strftime("%Y-%m"),
-                "Libelle_Mois": futur_dt.strftime("%B %Y"),
+                "Libelle_Mois": f"{MOIS_FR[mois_num]} {futur_dt.year}",
                 "Mois_Index": futur_idx,
                 "Solde_Initial_DH": round(solde_actuel, 2),
                 "Total_Encaissements_Prevu_DH": pred_enc,

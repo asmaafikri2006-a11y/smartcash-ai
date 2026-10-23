@@ -7,6 +7,12 @@ import pandas as pd
 import numpy as np
 import os
 
+MOIS_FR = {
+    1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
+    5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
+    9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+}
+
 def generer_donnees_historiques(filepath=None):
     """
     Génère un historique fictif réaliste sur 24 mois (2024-2025)
@@ -24,7 +30,7 @@ def generer_donnees_historiques(filepath=None):
     for i, date in enumerate(dates):
         month_idx = i + 1
         month_str = date.strftime("%Y-%m")
-        mois_libelle = date.strftime("%B %Y")
+        mois_libelle = f"{MOIS_FR[date.month]} {date.year}"
         
         # Tendance haussière légère + effet saisonnier
         tendance = 1.0 + (i * 0.012)
