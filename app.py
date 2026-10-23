@@ -34,88 +34,44 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 2. DESIGN & STYLES CSS (PALETTE FINANCIÈRE PRO : #102B4E, #2463A6, #DCE9F7, #EAF0F7)
+# 2. DESIGN & STYLES CSS (FOND CLAIR #F1F5F9, CARTES #FFFFFF, BLEU MARINE #17365D, TURQUOISE #087F8C)
 # ==============================================================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     :root {
-        --color-navy: #102B4E;
-        --color-blue-sec: #2463A6;
-        --color-surface-blue: #DCE9F7;
-        --bg-main: #EAF0F7;
+        --bg-main: #F1F5F9;
         --bg-card: #FFFFFF;
-        --bg-card-subtle: #F7FAFE;
-        --border-subtle: #D0DCE8;
-        --text-primary: #172B45;
-        --text-secondary: #52657A;
-        --color-green: #168653;
-        --color-red: #C83E4D;
-        --color-orange: #B96B12;
+        --border-subtle: #DCE5EF;
+        --text-navy: #17365D;
+        --text-body: #334155;
+        --text-muted: #64748B;
+        --accent-turquoise: #087F8C;
+        --accent-orange: #D97706;
+        --accent-red: #DC2626;
     }
 
     html, body, [class*="css"], .stApp {
         background-color: var(--bg-main) !important;
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        color: var(--text-primary) !important;
+        color: var(--text-body) !important;
     }
 
-    /* Barre latérale (Navigation) */
+    /* Barre latérale */
     section[data-testid="stSidebar"] {
-        background-color: #102B4E !important;
-        border-right: 1px solid #0D2340 !important;
-    }
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] h4 {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.3px;
-    }
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label {
-        color: #DCE9F7 !important;
-    }
-    section[data-testid="stSidebar"] .stCaption,
-    section[data-testid="stSidebar"] small {
-        color: #A3C2E3 !important;
-    }
-    section[data-testid="stSidebar"] hr {
-        border-color: rgba(220, 233, 247, 0.22) !important;
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="input"],
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
-        background-color: #F7FAFE !important;
-        border: 1px solid #D0DCE8 !important;
-        border-radius: 8px !important;
-    }
-    section[data-testid="stSidebar"] input {
-        color: #172B45 !important;
-        font-weight: 600 !important;
-    }
-    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] strong {
-        color: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] div[data-testid="stAlert"] {
-        background-color: rgba(220, 233, 247, 0.12) !important;
-        border-left: 4px solid #2463A6 !important;
-        color: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] div[data-testid="stAlert"] p {
-        color: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        border-right: 1px solid var(--border-subtle) !important;
     }
 
     /* En-tête de l'application */
     .app-header {
-        background: #102B4E;
-        border: 1px solid #0D2340;
+        background: #FFFFFF;
+        border: 1px solid var(--border-subtle);
         border-radius: 12px;
         padding: 22px 28px;
         margin-bottom: 24px;
-        box-shadow: 0 4px 14px rgba(16, 43, 78, 0.08);
+        box-shadow: 0 2px 8px rgba(23, 54, 93, 0.04);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -125,15 +81,15 @@ st.markdown("""
     .header-titles h1 {
         font-size: 1.85rem !important;
         font-weight: 800 !important;
-        color: #FFFFFF !important;
+        color: var(--text-navy) !important;
         margin: 0 !important;
         letter-spacing: -0.5px;
     }
     .header-titles p {
         font-size: 0.95rem !important;
-        color: #DCE9F7 !important;
+        color: var(--accent-turquoise) !important;
         margin: 4px 0 0 0 !important;
-        font-weight: 500;
+        font-weight: 600;
         letter-spacing: 0.1px;
     }
     .header-badges {
@@ -144,32 +100,26 @@ st.markdown("""
     .header-badge {
         font-size: 0.78rem;
         font-weight: 600;
-        padding: 6px 14px;
+        padding: 6px 12px;
         border-radius: 6px;
-        border: 1px solid rgba(220, 233, 247, 0.35);
-        background: rgba(220, 233, 247, 0.12);
-        color: #FFFFFF;
-    }
-    .badge-pme {
-        background: #DCE9F7 !important;
-        color: #102B4E !important;
-        border: 1px solid #DCE9F7 !important;
-        font-weight: 700 !important;
+        border: 1px solid var(--border-subtle);
+        background: #F8FAFC;
+        color: var(--text-navy);
     }
 
-    /* Conteneur de section en carte élégante */
+    /* Conteneur de section en carte blanche */
     .content-card {
         background: #FFFFFF;
-        border: 1px solid #D0DCE8;
+        border: 1px solid var(--border-subtle);
         border-radius: 12px;
         padding: 24px 28px;
         margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(16, 43, 78, 0.04);
+        box-shadow: 0 2px 8px rgba(23, 54, 93, 0.04);
     }
     .card-title {
-        font-size: 1.18rem;
+        font-size: 1.15rem;
         font-weight: 700;
-        color: #102B4E;
+        color: var(--text-navy);
         margin: 0 0 6px 0;
         letter-spacing: -0.3px;
         display: flex;
@@ -177,8 +127,8 @@ st.markdown("""
         gap: 8px;
     }
     .card-subtitle {
-        font-size: 0.88rem;
-        color: #52657A;
+        font-size: 0.85rem;
+        color: var(--text-muted);
         margin: 0 0 18px 0;
     }
 
@@ -186,7 +136,7 @@ st.markdown("""
     .kpi-container {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 16px;
+        gap: 14px;
         margin-bottom: 24px;
     }
     @media (max-width: 1200px) {
@@ -202,58 +152,50 @@ st.markdown("""
 
     .kpi-box {
         background: #FFFFFF;
-        border: 1px solid #D0DCE8;
+        border: 1px solid var(--border-subtle);
         border-radius: 10px;
-        padding: 20px 18px;
+        padding: 18px 18px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 124px;
-        box-shadow: 0 2px 6px rgba(16, 43, 78, 0.03);
+        box-shadow: 0 1px 4px rgba(23, 54, 93, 0.03);
     }
-    .kpi-box-navy {
-        border-top: 3.5px solid #102B4E;
-    }
-    .kpi-box-blue {
-        border-top: 3.5px solid #2463A6;
-    }
-    .kpi-box-green {
-        border-top: 3.5px solid #168653;
+    .kpi-box-turquoise {
+        border-top: 3px solid var(--accent-turquoise);
     }
     .kpi-box-orange {
-        border-top: 3.5px solid #B96B12;
+        border-top: 3px solid var(--accent-orange);
     }
     .kpi-box-red {
-        border-top: 3.5px solid #C83E4D;
+        border-top: 3px solid var(--accent-red);
+    }
+    .kpi-box-navy {
+        border-top: 3px solid var(--text-navy);
     }
 
     .kpi-title {
         font-size: 0.76rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: #52657A;
-        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
     }
     .kpi-number {
         font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         font-weight: 700;
-        color: #102B4E;
+        color: var(--text-navy);
         letter-spacing: -0.4px;
-        margin-bottom: 6px;
-        line-height: 1.25;
+        margin-bottom: 4px;
     }
-    .kpi-number-navy { color: #102B4E; }
-    .kpi-number-blue { color: #2463A6; }
-    .kpi-number-green { color: #168653; }
-    .kpi-number-orange { color: #B96B12; }
-    .kpi-number-red { color: #C83E4D; }
+    .kpi-number-turquoise { color: var(--accent-turquoise); }
+    .kpi-number-orange { color: var(--accent-orange); }
+    .kpi-number-red { color: var(--accent-red); }
 
     .kpi-foot {
         font-size: 0.78rem;
-        color: #52657A;
-        font-weight: 500;
+        color: var(--text-muted);
     }
 
     /* Boîtes d'alertes & Recommandations */
@@ -261,19 +203,19 @@ st.markdown("""
         border-radius: 10px;
         padding: 20px 24px;
         margin-top: 14px;
-        border: 1px solid #D0DCE8;
+        border: 1px solid var(--border-subtle);
     }
     .alert-favorable {
-        background: #F4FBF7;
-        border-left: 5px solid #168653;
+        background: #F0FDFA;
+        border-left: 5px solid var(--accent-turquoise);
     }
     .alert-vigilance {
-        background: #FFFDF7;
-        border-left: 5px solid #B96B12;
+        background: #FFFBEB;
+        border-left: 5px solid var(--accent-orange);
     }
     .alert-danger {
-        background: #FEF5F6;
-        border-left: 5px solid #C83E4D;
+        background: #FEF2F2;
+        border-left: 5px solid var(--accent-red);
     }
 
     .alert-heading {
@@ -281,21 +223,21 @@ st.markdown("""
         font-weight: 700;
         margin-bottom: 8px;
     }
-    .heading-green { color: #168653; }
-    .heading-orange { color: #B96B12; }
-    .heading-red { color: #C83E4D; }
+    .heading-turquoise { color: #0F766E; }
+    .heading-orange { color: #B45309; }
+    .heading-red { color: #B91C1C; }
 
     .alert-text {
-        font-size: 0.92rem;
-        color: #172B45;
+        font-size: 0.9rem;
+        color: var(--text-body);
         line-height: 1.6;
         margin-bottom: 12px;
     }
     .alert-actions-title {
-        font-size: 0.85rem;
+        font-size: 0.84rem;
         font-weight: 700;
         text-transform: uppercase;
-        color: #102B4E;
+        color: var(--text-navy);
         margin-top: 10px;
         margin-bottom: 6px;
         letter-spacing: 0.3px;
@@ -303,125 +245,79 @@ st.markdown("""
     .alert-actions-list {
         margin: 0;
         padding-left: 18px;
-        font-size: 0.9rem;
-        color: #172B45;
+        font-size: 0.88rem;
+        color: var(--text-body);
         line-height: 1.6;
     }
     .alert-disclaimer {
         font-size: 0.78rem;
-        color: #52657A;
+        color: var(--text-muted);
         margin-top: 12px;
         font-style: italic;
-        border-top: 1px solid #D0DCE8;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
         padding-top: 8px;
     }
 
     /* Style des inputs & boutons */
     div[data-baseweb="input"], div[data-baseweb="base-input"] {
         background-color: #FFFFFF !important;
-        border: 1px solid #D0DCE8 !important;
+        border: 1px solid var(--border-subtle) !important;
         border-radius: 8px !important;
-        color: #172B45 !important;
+        color: var(--text-navy) !important;
     }
     div[data-baseweb="input"]:focus-within {
-        border-color: #2463A6 !important;
-        box-shadow: 0 0 0 1px #2463A6 !important;
+        border-color: var(--accent-turquoise) !important;
     }
     input {
-        color: #172B45 !important;
+        color: var(--text-navy) !important;
         font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace !important;
     }
     .stNumberInput label, .stTextInput label, .stSelectbox label {
-        color: #102B4E !important;
+        color: var(--text-navy) !important;
         font-weight: 600 !important;
-        font-size: 0.86rem !important;
+        font-size: 0.84rem !important;
     }
 
     .stButton > button {
-        background-color: #102B4E !important;
+        background-color: #17365D !important;
         color: #FFFFFF !important;
-        border: 1px solid #102B4E !important;
+        border: 1px solid #17365D !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        font-size: 0.88rem !important;
-        padding: 8px 18px !important;
-        transition: all 0.2s ease !important;
-    }
-    .stButton > button:hover {
-        background-color: #2463A6 !important;
-        border-color: #2463A6 !important;
-        color: #FFFFFF !important;
-    }
-
-    .stDownloadButton > button {
-        background-color: #F7FAFE !important;
-        color: #102B4E !important;
-        border: 1px solid #D0DCE8 !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        font-size: 0.86rem !important;
+        font-size: 0.85rem !important;
         padding: 8px 16px !important;
         transition: all 0.2s ease !important;
     }
-    .stDownloadButton > button:hover {
-        background-color: #2463A6 !important;
-        border-color: #2463A6 !important;
+    .stButton > button:hover {
+        background-color: #087F8C !important;
+        border-color: #087F8C !important;
         color: #FFFFFF !important;
     }
 
     /* Badges de table */
     .badge-enc {
-        background: #E8F6EE;
-        color: #168653;
-        border: 1px solid #BEE4CE;
+        background: #CCFBF1;
+        color: #0F766E;
         padding: 3px 8px;
         border-radius: 4px;
         font-size: 0.78rem;
         font-weight: 600;
     }
     .badge-dec {
-        background: #FCECEE;
-        color: #C83E4D;
-        border: 1px solid #F6BFC5;
+        background: #FEE2E2;
+        color: #991B1B;
         padding: 3px 8px;
         border-radius: 4px;
         font-size: 0.78rem;
         font-weight: 600;
     }
 
-    /* Tabs & Métriques */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 2px solid #D0DCE8;
-    }
-    .stTabs [data-baseweb="tab"] {
-        color: #52657A !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        padding: 10px 16px !important;
-    }
-    .stTabs [aria-selected="true"] {
-        color: #102B4E !important;
-        font-weight: 700 !important;
-        border-bottom-color: #2463A6 !important;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #102B4E !important;
-        font-family: 'JetBrains Mono', monospace !important;
-        font-weight: 700 !important;
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #52657A !important;
-        font-weight: 600 !important;
-    }
-
     .footer-bar {
-        border-top: 1px solid #D0DCE8;
+        border-top: 1px solid var(--border-subtle);
         margin-top: 36px;
         padding: 18px 0;
         text-align: center;
-        color: #52657A;
+        color: var(--text-muted);
         font-size: 0.82rem;
     }
 </style>
@@ -528,7 +424,7 @@ st.markdown("""
     </div>
     <div class="header-badges">
         <span class="header-badge">Devise : Dirham marocain (DH)</span>
-        <span class="header-badge badge-pme">Module PME</span>
+        <span class="header-badge" style="background:#F0FDFA; color:#0F766E; border-color:#99F6E4;">Module PME</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -676,8 +572,8 @@ else:
 # Détermination du statut visuel du solde final
 if solde_final is not None:
     if solde_final > st.session_state.seuil_securite:
-        box_class_final = "kpi-box-blue"
-        num_class_final = "kpi-number-blue"
+        box_class_final = "kpi-box-turquoise"
+        num_class_final = "kpi-number-turquoise"
         statut_libelle = "Favorable (Au-dessus du seuil)"
     elif 0 <= solde_final <= st.session_state.seuil_securite:
         box_class_final = "kpi-box-orange"
@@ -689,27 +585,27 @@ if solde_final is not None:
         statut_libelle = "Risque de découvert bancaire"
 else:
     box_class_final = "kpi-box-navy"
-    num_class_final = "kpi-number-navy"
+    num_class_final = ""
     statut_libelle = "Solde initial non renseigné"
 
-net_class = "kpi-number-green" if solde_net >= 0 else "kpi-number-red"
+net_class = "kpi-number-turquoise" if solde_net >= 0 else "kpi-number-red"
 net_prefix = "+" if solde_net >= 0 else ""
 
 st.markdown(f"""
 <div class="kpi-container">
     <div class="kpi-box kpi-box-navy">
         <div class="kpi-title">Solde initial</div>
-        <div class="kpi-number kpi-number-navy">{format_dh(solde_initial)}</div>
+        <div class="kpi-number">{format_dh(solde_initial)}</div>
         <div class="kpi-foot">{"Disponibilités en banque" if solde_initial is not None else "Montant non précisé"}</div>
     </div>
-    <div class="kpi-box kpi-box-green">
+    <div class="kpi-box kpi-box-turquoise">
         <div class="kpi-title">Total Encaissements</div>
-        <div class="kpi-number kpi-number-green">+ {format_dh(total_encaissements)}</div>
+        <div class="kpi-number kpi-number-turquoise">+ {format_dh(total_encaissements)}</div>
         <div class="kpi-foot">{len(df_ops[df_ops['Type'] == 'Encaissement'])} règlements reçus</div>
     </div>
-    <div class="kpi-box kpi-box-red">
+    <div class="kpi-box kpi-box-navy">
         <div class="kpi-title">Total Décaissements</div>
-        <div class="kpi-number kpi-number-red">- {format_dh(total_decaissements)}</div>
+        <div class="kpi-number">- {format_dh(total_decaissements)}</div>
         <div class="kpi-foot">{len(df_ops[df_ops['Type'] == 'Décaissement'])} sorties de fonds</div>
     </div>
     <div class="kpi-box kpi-box-navy">
@@ -809,61 +705,58 @@ with col_chart1:
         
         fig_evol = go.Figure()
         
-        # Courbe principale Trésorerie — Bleu marine #102B4E
+        # Courbe principale (Turquoise #087F8C)
         fig_evol.add_trace(go.Scatter(
             x=df_daily['Date'],
             y=df_daily['Solde_Cumule_DH'],
             mode='lines+markers',
             name='Solde Cumulé (DH)',
-            line=dict(color='#2463A6', width=2.5),
-            marker=dict(size=6, color='#102B4E'),
-            fill='tozeroy',
-            fillcolor='rgba(36, 99, 166, 0.07)',
+            line=dict(color='#087F8C', width=2.5),
+            marker=dict(size=6, color='#17365D'),
             hovertemplate='%{x|%d/%m/%Y}<br>Solde : %{y:,.2f} DH<extra></extra>'
         ))
         
-        # Ligne de seuil de sécurité (Orange vigilance #B96B12)
+        # Ligne de seuil de sécurité (Orange #D97706)
         fig_evol.add_hline(
             y=st.session_state.seuil_securite,
             line_dash='dot',
-            line_color='#B96B12',
+            line_color='#D97706',
             line_width=1.5,
             annotation_text=f"Seuil de sécurité ({format_dh(st.session_state.seuil_securite)})",
             annotation_position="bottom right",
-            annotation_font=dict(color="#B96B12", size=10)
+            annotation_font=dict(color="#D97706", size=10)
         )
         
-        # Ligne de référence à 0 DH (Rouge #C83E4D)
+        # Ligne de référence à 0 DH (Rouge #DC2626)
         fig_evol.add_hline(
             y=0,
-            line_color='#C83E4D',
+            line_color='#DC2626',
             line_width=1.5,
             annotation_text="Ligne de découvert (0 DH)",
             annotation_position="top right",
-            annotation_font=dict(color="#C83E4D", size=10)
+            annotation_font=dict(color="#DC2626", size=10)
         )
         
         fig_evol.update_layout(
             paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#F7FAFE",
-            font=dict(color="#172B45", family="Plus Jakarta Sans"),
-            height=380,
+            plot_bgcolor="#FFFFFF",
+            font=dict(color="#17365D", family="Plus Jakarta Sans"),
+            height=360,
             margin=dict(l=20, r=20, t=40, b=20),
             xaxis=dict(
-                gridcolor="#DCE9F7",
-                linecolor="#D0DCE8",
-                tickfont=dict(color="#52657A", size=10),
-                title=dict(text="Date de l'opération", font=dict(color="#52657A", size=11))
+                gridcolor="#E2E8F0",
+                linecolor="#DCE5EF",
+                tickfont=dict(color="#475569", size=10),
+                title="Date de l'opération"
             ),
             yaxis=dict(
-                gridcolor="#DCE9F7",
-                linecolor="#D0DCE8",
-                tickfont=dict(color="#52657A", size=10),
-                title=dict(text="Montant (DH)", font=dict(color="#52657A", size=11)),
+                gridcolor="#E2E8F0",
+                linecolor="#DCE5EF",
+                tickfont=dict(color="#475569", size=10),
+                title="Montant (DH)",
                 zeroline=False
             ),
-            legend=dict(orientation="h", y=1.08, x=0,
-                        font=dict(color="#172B45", size=11))
+            legend=dict(orientation="h", y=1.08, x=0)
         )
         st.plotly_chart(fig_evol, use_container_width=True)
     else:
@@ -876,30 +769,19 @@ with col_chart2:
     fig_comp = go.Figure(data=[go.Pie(
         labels=["Encaissements", "Décaissements"],
         values=[total_encaissements, total_decaissements],
-        hole=0.58,
-        marker=dict(
-            colors=["#168653", "#C83E4D"],
-            line=dict(color="#FFFFFF", width=2.5)
-        ),
+        hole=0.55,
+        marker=dict(colors=["#087F8C", "#E11D48"], line=dict(color="#FFFFFF", width=2)),
         textinfo='percent+label',
-        textfont=dict(size=11, color="#172B45"),
         hoverinfo='label+value+percent'
     )])
     
     fig_comp.update_layout(
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
-        font=dict(color="#172B45", family="Plus Jakarta Sans"),
-        height=380,
-        margin=dict(l=20, r=20, t=50, b=20),
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            x=0.5,
-            xanchor="center",
-            y=-0.08,
-            font=dict(color="#172B45", size=11)
-        )
+        font=dict(color="#17365D", family="Plus Jakarta Sans"),
+        height=360,
+        margin=dict(l=20, r=20, t=40, b=20),
+        showlegend=False
     )
     st.plotly_chart(fig_comp, use_container_width=True)
 
@@ -995,7 +877,7 @@ with tab_recom:
         marge = solde_final - st.session_state.seuil_securite
         st.markdown(f"""
         <div class="alert-card alert-favorable">
-            <div class="alert-heading heading-green">Situation favorable : Excédent de trésorerie ({format_dh(solde_final)})</div>
+            <div class="alert-heading heading-turquoise">Situation favorable : Excédent de trésorerie ({format_dh(solde_final)})</div>
             <div class="alert-text">
                 Le solde final dépasse confortablement votre seuil de sécurité ({format_dh(st.session_state.seuil_securite)}) 
                 avec une réserve excédentaire de <strong>{format_dh(marge)}</strong>. 
