@@ -1,999 +1,1480 @@
 """
-SmartCash AI - Gestion et prévision de trésorerie
-Tableau de bord financier pour PME et gestionnaires au Maroc.
-Devise : Dirham marocain (DH).
+SmartCash AI - Application Intelligente de Gestion et Prévision de Trésorerie (Maroc 🇲🇦)
+Fichier principal : app.py
+Thème : Bleu Marine Sombre (#0B1630, #101F3D, #172A4D)
+Devise : Dirham Marocain (MAD / DH) - Fuseau horaire : Africa/Casablanca
 """
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
 import os
 import io
+from datetime import datetime, date, timedelta
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 
-from data_importer import (
-    detecter_colonnes,
-    valider_et_traiter_operations,
-    calculer_solde_cumule,
-    generer_donnees_demo_operations,
-    generer_modele_csv,
-    generer_modele_excel
-)
-from data_generator import charger_ou_generer_donnees
-from ml_model import ModelePrevisionTresorerie
+# Modules internes
+import data_manager as dm
+from data_manager import format_dh, get_now_morocco, get_today_morocco, TAUX_TVA_MAROC
+import financial_calculations as fc
+import forecast_model as fm
+import report_generator as rg
 
-# ==============================================================================
-# 1. CONFIGURATION DE LA PAGE STREAMLIT
-# ==============================================================================
+# ---------------------------------------------------------
+# CONFIGURATION DE LA PAGE STREAMLIT
+# ---------------------------------------------------------
 st.set_page_config(
-    page_title="SmartCash AI | Gestion et prévision de trésorerie",
+    page_title="SmartCash AI Maroc | Trésorerie & IA",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ==============================================================================
-# 2. DESIGN & STYLES CSS (FOND CLAIR #F1F5F9, CARTES #FFFFFF, BLEU MARINE #17365D, TURQUOISE #087F8C)
-# ==============================================================================
-st.markdown("""
+# ---------------------------------------------------------
+# STYLES CSS PERSONNALISÉS (DESIGN BLEU MARINE FONCÉ)
+# ---------------------------------------------------------
+DARK_NAVY_CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-    :root {
-        --bg-main: #F1F5F9;
-        --bg-card: #FFFFFF;
-        --border-subtle: #DCE5EF;
-        --text-navy: #17365D;
-        --text-body: #334155;
-        --text-muted: #64748B;
-        --accent-turquoise: #087F8C;
-        --accent-orange: #D97706;
-        --accent-red: #DC2626;
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #F1F5F9;
     }
 
-    html, body, [class*="css"], .stApp {
-        background-color: var(--bg-main) !important;
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        color: var(--text-body) !important;
+    /* Arrière-plan global bleu marine foncé */
+    .stApp {
+        background-color: #0B1630 !important;
+    }
+
+    .main .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 3rem;
+        max-width: 1350px;
     }
 
     /* Barre latérale */
     section[data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid var(--border-subtle) !important;
+        background-color: #101F3D !important;
+        border-right: 1px solid #1E3A5F;
     }
 
-    /* En-tête de l'application */
-    .app-header {
-        background: #FFFFFF;
-        border: 1px solid var(--border-subtle);
-        border-radius: 12px;
+    /* En-tête de marque */
+    .brand-header {
+        background: linear-gradient(135deg, #101F3D 0%, #172A4D 50%, #1E3A8A 100%);
+        border: 1px solid #23385E;
         padding: 22px 28px;
-        margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(23, 54, 93, 0.04);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-    .header-titles h1 {
-        font-size: 1.85rem !important;
-        font-weight: 800 !important;
-        color: var(--text-navy) !important;
-        margin: 0 !important;
-        letter-spacing: -0.5px;
-    }
-    .header-titles p {
-        font-size: 0.95rem !important;
-        color: var(--accent-turquoise) !important;
-        margin: 4px 0 0 0 !important;
-        font-weight: 600;
-        letter-spacing: 0.1px;
-    }
-    .header-badges {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-    .header-badge {
-        font-size: 0.78rem;
-        font-weight: 600;
-        padding: 6px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--border-subtle);
-        background: #F8FAFC;
-        color: var(--text-navy);
-    }
-
-    /* Conteneur de section en carte blanche */
-    .content-card {
-        background: #FFFFFF;
-        border: 1px solid var(--border-subtle);
         border-radius: 12px;
-        padding: 24px 28px;
-        margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(23, 54, 93, 0.04);
+        color: #F1F5F9;
+        margin-bottom: 22px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
-    .card-title {
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: var(--text-navy);
-        margin: 0 0 6px 0;
-        letter-spacing: -0.3px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    
+    .brand-title {
+        font-size: 26px;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.5px;
+        color: #FFFFFF;
     }
-    .card-subtitle {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-        margin: 0 0 18px 0;
-    }
-
-    /* Grille des indicateurs financiers */
-    .kpi-container {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 14px;
-        margin-bottom: 24px;
-    }
-    @media (max-width: 1200px) {
-        .kpi-container {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-    @media (max-width: 768px) {
-        .kpi-container {
-            grid-template-columns: 1fr;
-        }
+    
+    .brand-subtitle {
+        font-size: 14.5px;
+        font-weight: 400;
+        color: #93C5FD;
+        margin-top: 4px;
+        margin-bottom: 0;
     }
 
-    .kpi-box {
-        background: #FFFFFF;
-        border: 1px solid var(--border-subtle);
+    /* Cartes KPI bleu marine */
+    .kpi-card {
+        background-color: #172A4D;
+        border: 1px solid #23385E;
         border-radius: 10px;
-        padding: 18px 18px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        box-shadow: 0 1px 4px rgba(23, 54, 93, 0.03);
+        padding: 16px 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        transition: transform 0.15s ease, border-color 0.15s ease;
+        height: 100%;
     }
-    .kpi-box-turquoise {
-        border-top: 3px solid var(--accent-turquoise);
-    }
-    .kpi-box-orange {
-        border-top: 3px solid var(--accent-orange);
-    }
-    .kpi-box-red {
-        border-top: 3px solid var(--accent-red);
-    }
-    .kpi-box-navy {
-        border-top: 3px solid var(--text-navy);
+    
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: #3B82F6;
     }
 
-    .kpi-title {
-        font-size: 0.76rem;
-        font-weight: 700;
+    .kpi-label {
+        font-size: 11.5px;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-muted);
-        margin-bottom: 6px;
+        letter-spacing: 0.6px;
+        color: #B7C5DA;
+        margin-bottom: 5px;
     }
-    .kpi-number {
-        font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
-        font-size: 1.4rem;
+
+    .kpi-value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #FFFFFF;
+        line-height: 1.25;
+    }
+
+    .kpi-sub {
+        font-size: 11.5px;
+        margin-top: 5px;
+        font-weight: 500;
+        color: #94A3B8;
+    }
+
+    /* Badges financiers */
+    .badge-inflow {
+        color: #22C55E;
+        background-color: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
         font-weight: 700;
-        color: var(--text-navy);
-        letter-spacing: -0.4px;
+        font-size: 11.5px;
+        display: inline-block;
+    }
+
+    .badge-outflow {
+        color: #EF4444;
+        background-color: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 11.5px;
+        display: inline-block;
+    }
+
+    .badge-late {
+        color: #EF4444;
+        background-color: rgba(239, 68, 68, 0.2);
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .badge-pending {
+        color: #F59E0B;
+        background-color: rgba(245, 158, 11, 0.2);
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge-paid {
+        color: #22C55E;
+        background-color: rgba(34, 197, 94, 0.2);
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* Cartes d'alertes */
+    .alert-card {
+        border-left: 5px solid;
+        background-color: #172A4D;
+        border-top: 1px solid #23385E;
+        border-right: 1px solid #23385E;
+        border-bottom: 1px solid #23385E;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .alert-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #F1F5F9;
         margin-bottom: 4px;
     }
-    .kpi-number-turquoise { color: var(--accent-turquoise); }
-    .kpi-number-orange { color: var(--accent-orange); }
-    .kpi-number-red { color: var(--accent-red); }
 
-    .kpi-foot {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-    }
-
-    /* Boîtes d'alertes & Recommandations */
-    .alert-card {
-        border-radius: 10px;
-        padding: 20px 24px;
-        margin-top: 14px;
-        border: 1px solid var(--border-subtle);
-    }
-    .alert-favorable {
-        background: #F0FDFA;
-        border-left: 5px solid var(--accent-turquoise);
-    }
-    .alert-vigilance {
-        background: #FFFBEB;
-        border-left: 5px solid var(--accent-orange);
-    }
-    .alert-danger {
-        background: #FEF2F2;
-        border-left: 5px solid var(--accent-red);
-    }
-
-    .alert-heading {
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-    .heading-turquoise { color: #0F766E; }
-    .heading-orange { color: #B45309; }
-    .heading-red { color: #B91C1C; }
-
-    .alert-text {
-        font-size: 0.9rem;
-        color: var(--text-body);
-        line-height: 1.6;
-        margin-bottom: 12px;
-    }
-    .alert-actions-title {
-        font-size: 0.84rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: var(--text-navy);
-        margin-top: 10px;
+    .alert-body {
+        font-size: 13.5px;
+        color: #CBD5E1;
         margin-bottom: 6px;
-        letter-spacing: 0.3px;
-    }
-    .alert-actions-list {
-        margin: 0;
-        padding-left: 18px;
-        font-size: 0.88rem;
-        color: var(--text-body);
-        line-height: 1.6;
-    }
-    .alert-disclaimer {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        margin-top: 12px;
-        font-style: italic;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
-        padding-top: 8px;
     }
 
-    /* Style des inputs & boutons */
-    div[data-baseweb="input"], div[data-baseweb="base-input"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: 8px !important;
-        color: var(--text-navy) !important;
-    }
-    div[data-baseweb="input"]:focus-within {
-        border-color: var(--accent-turquoise) !important;
-    }
-    input {
-        color: var(--text-navy) !important;
-        font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace !important;
-    }
-    .stNumberInput label, .stTextInput label, .stSelectbox label {
-        color: var(--text-navy) !important;
-        font-weight: 600 !important;
-        font-size: 0.84rem !important;
+    .alert-recom {
+        font-size: 13px;
+        color: #93C5FD;
+        background-color: rgba(30, 58, 138, 0.35);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-weight: 500;
     }
 
-    .stButton > button {
-        background-color: #17365D !important;
-        color: #FFFFFF !important;
-        border: 1px solid #17365D !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        font-size: 0.85rem !important;
-        padding: 8px 16px !important;
-        transition: all 0.2s ease !important;
-    }
-    .stButton > button:hover {
-        background-color: #087F8C !important;
-        border-color: #087F8C !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Badges de table */
-    .badge-enc {
-        background: #CCFBF1;
-        color: #0F766E;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-    .badge-dec {
-        background: #FEE2E2;
-        color: #991B1B;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.78rem;
+    /* Boîte d'information et conteneurs */
+    .morocco-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: rgba(30, 58, 138, 0.4);
+        border: 1px solid #2563EB;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #BFDBFE;
         font-weight: 600;
     }
 
-    .footer-bar {
-        border-top: 1px solid var(--border-subtle);
-        margin-top: 36px;
-        padding: 18px 0;
-        text-align: center;
-        color: var(--text-muted);
-        font-size: 0.82rem;
+    /* Style des formulaires et onglets */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 1px solid #23385E;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #101F3D;
+        border: 1px solid #23385E;
+        border-radius: 8px 8px 0 0;
+        color: #B7C5DA;
+        padding: 8px 16px;
+        font-weight: 600;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #172A4D !important;
+        border-color: #3B82F6 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Dataframe et tableaux */
+    div[data-testid="stDataFrame"] {
+        border: 1px solid #23385E;
+        border-radius: 8px;
+        background-color: #101F3D;
+    }
+
+    /* Inputs et Selects */
+    div[data-baseweb="input"], div[data-baseweb="select"] > div {
+        background-color: #172A4D !important;
+        border-color: #23385E !important;
+        color: #F1F5F9 !important;
     }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(DARK_NAVY_CSS, unsafe_allow_html=True)
 
-# ==============================================================================
-# 3. UTILITAIRE DE FORMATAGE FINANCIER EN DIRHAMS (DH)
-# ==============================================================================
-def format_dh(valeur, show_decimals=True):
-    """
-    Formate un montant en Dirhams marocains : par exemple « 25 000,00 DH ».
-    """
-    if valeur is None or pd.isna(valeur):
-        return "Non renseigné"
-    val = float(valeur)
-    signe = "- " if val < 0 else ""
-    val_abs = abs(val)
-    if show_decimals:
-        formatted = f"{val_abs:,.2f}".replace(",", " ").replace(".", ",")
-    else:
-        formatted = f"{int(round(val_abs)):,}".replace(",", " ")
-    return f"{signe}{formatted} DH"
+# ---------------------------------------------------------
+# INITIALISATION ET CHARGEMENT DU SESSION STATE
+# ---------------------------------------------------------
+if "initial_balance" not in st.session_state:
+    st.session_state["initial_balance"] = 120000.0  # 120 000 DH
 
-# ==============================================================================
-# 4. GESTION DE LA SESSION & DES DONNÉES
-# ==============================================================================
-if "solde_initial_user" not in st.session_state:
-    st.session_state.solde_initial_user = 50000.0
-if "solde_initial_connu" not in st.session_state:
-    st.session_state.solde_initial_connu = True
-if "seuil_securite" not in st.session_state:
-    st.session_state.seuil_securite = 25000.0
-if "raw_uploaded_df" not in st.session_state:
-    st.session_state.raw_uploaded_df = None
-if "last_file_signature" not in st.session_state:
-    st.session_state.last_file_signature = None
-if "source_donnees" not in st.session_state:
-    st.session_state.source_donnees = "demo"  # 'demo' ou 'import'
+if "security_threshold" not in st.session_state:
+    st.session_state["security_threshold"] = 25000.0  # 25 000 DH
 
-# Chargement initial des données de démonstration par défaut
-if "operations_valides" not in st.session_state or st.session_state.operations_valides is None:
-    df_demo_init = generer_donnees_demo_operations()
-    mapping_demo = detecter_colonnes(df_demo_init.columns)
-    df_clean_demo, _, _ = valider_et_traiter_operations(
-        df_demo_init, mapping_demo['date'], mapping_demo['libelle'], mapping_demo['type'], mapping_demo['montant']
-    )
-    st.session_state.operations_valides = df_clean_demo
-    st.session_state.erreurs_import = []
-    st.session_state.stats_import = {"total_lignes": len(df_demo_init), "lignes_valides": len(df_clean_demo), "nb_erreurs": 0}
+if "transactions_df" not in st.session_state:
+    st.session_state["transactions_df"] = dm.load_transactions(st.session_state["initial_balance"])
 
-# ==============================================================================
-# 5. BARRE LATÉRALE : PARAMÈTRES GÉNÉRAUX & SEUIL DE SÉCURITÉ
-# ==============================================================================
-st.sidebar.markdown("### SmartCash AI")
-st.sidebar.caption("Gestion et prévision de trésorerie")
-st.sidebar.markdown("---")
+if "forecast_cache" not in st.session_state:
+    st.session_state["forecast_cache"] = None
 
-st.sidebar.markdown("#### Paramètres financiers")
+now_maroc = get_now_morocco()
+today_maroc = get_today_morocco()
 
-solde_connu = st.sidebar.checkbox(
-    "Solde initial connu",
-    value=st.session_state.solde_initial_connu,
-    help="Décochez cette option si le solde de départ en banque est inconnu au début de la période."
-)
-st.session_state.solde_initial_connu = solde_connu
-
-if solde_connu:
-    solde_in_val = st.sidebar.number_input(
-        "Solde initial disponible (DH) :",
-        value=float(st.session_state.solde_initial_user),
-        step=5000.0,
-        help="Montant disponible sur vos comptes bancaires et en caisse en début de période."
-    )
-    st.session_state.solde_initial_user = solde_in_val
-else:
-    st.sidebar.info("Le solde initial est marqué comme inconnu. Le solde final ne pourra pas être déterminé avec certitude.")
-
-seuil_sec_val = st.sidebar.number_input(
-    "Seuil de sécurité minimum (DH) :",
-    min_value=0.0,
-    max_value=500000.0,
-    value=float(st.session_state.seuil_securite),
-    step=5000.0,
-    help="Seuil de réserve en dessous duquel la trésorerie est jugée tendue."
-)
-st.session_state.seuil_securite = seuil_sec_val
-
-st.sidebar.markdown("---")
-st.sidebar.caption("""
-**Règles de gestion :**
-- Les opérations sont classées en **Encaissement** (+) et **Décaissement** (-).
-- Le solde net = Encaissements − Décaissements.
-- Le solde final = Solde initial + Encaissements − Décaissements.
-""")
-
-# ==============================================================================
-# 6. EN-TÊTE PRINCIPAL
-# ==============================================================================
-st.markdown("""
-<div class="app-header">
-    <div class="header-titles">
-        <h1>SmartCash AI</h1>
-        <p>Gestion et prévision de trésorerie</p>
-    </div>
-    <div class="header-badges">
-        <span class="header-badge">Devise : Dirham marocain (DH)</span>
-        <span class="header-badge" style="background:#F0FDFA; color:#0F766E; border-color:#99F6E4;">Module PME</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ==============================================================================
-# 7. SECTION 1 : IMPORTATION DES OPÉRATIONS COMPTABLES (OBJECTIF 2)
-# ==============================================================================
-with st.container():
+# ---------------------------------------------------------
+# BARRE LATÉRALE DE NAVIGATION ET PARAMÈTRES
+# ---------------------------------------------------------
+with st.sidebar:
     st.markdown("""
-    <div class="content-card">
-        <div class="card-title">Importer les opérations comptables</div>
-        <div class="card-subtitle">Chargez votre relevé ou journal d'opérations au format CSV ou Excel (.xlsx).</div>
+        <div style="text-align: center; padding: 10px 0 16px 0;">
+            <div style="font-size: 32px; margin-bottom: 2px;">🇲🇦 💼</div>
+            <div style="font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px;">SmartCash AI</div>
+            <div style="font-size: 11px; color: #93C5FD; font-weight: 600;">Votre trésorerie, anticipée intelligemment</div>
+            <div style="margin-top: 6px;" class="morocco-badge">Devise : Dirham Marocain (MAD)</div>
+        </div>
     """, unsafe_allow_html=True)
 
-    col_upload, col_templates = st.columns([2, 1.2])
+    menu_choice = st.radio(
+        "Navigation principale",
+        [
+            "📊 Tableau de bord",
+            "💳 Opérations & Facturation",
+            "📥 Importation de données",
+            "🤖 Prévision IA (MAD)",
+            "⚠️ Alertes & Recommandations",
+            "📈 Analyse & Rapports",
+            "🧠 Comprendre l'IA (Module)"
+        ],
+        index=0,
+        label_visibility="collapsed"
+    )
 
-    with col_upload:
-        uploaded_file = st.file_uploader(
-            "Sélectionner un fichier (CSV ou Excel) :",
-            type=["csv", "xlsx", "xls"],
-            key="file_uploader_operations",
-            help="Le fichier doit comporter les colonnes : Date, Libellé, Type (Encaissement/Décaissement) et Montant."
-        )
+    st.markdown("---")
+    st.markdown("#### ⚙️ Paramètres de Trésorerie (DH)")
 
-    with col_templates:
-        st.markdown("**Modèles prêts à l'emploi :**")
-        st.caption("Téléchargez un modèle préformaté avec exemples :")
-        c_dl1, c_dl2 = st.columns(2)
-        with c_dl1:
-            st.download_button(
-                label="Modèle CSV",
-                data=generer_modele_csv(),
-                file_name="modele_operations_smartcash.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-        with c_dl2:
-            st.download_button(
-                label="Modèle Excel",
-                data=generer_modele_excel(),
-                file_name="modele_operations_smartcash.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        if st.button("Charger les données de démonstration", use_container_width=True):
-            df_demo = generer_donnees_demo_operations()
-            m_demo = detecter_colonnes(df_demo.columns)
-            df_clean_demo, err_demo, stats_demo = valider_et_traiter_operations(
-                df_demo, m_demo['date'], m_demo['libelle'], m_demo['type'], m_demo['montant']
-            )
-            st.session_state.operations_valides = df_clean_demo
-            st.session_state.erreurs_import = err_demo
-            st.session_state.stats_import = stats_demo
-            st.session_state.source_donnees = "demo"
-            st.session_state.raw_uploaded_df = None
+    initial_balance_input = st.number_input(
+        "Solde initial de départ (DH)",
+        min_value=-500000.0,
+        max_value=10000000.0,
+        value=float(st.session_state["initial_balance"]),
+        step=5000.0,
+        format="%.2f",
+        help="Solde disponible au début de la période d'analyse en Dirhams marocains."
+    )
+    if initial_balance_input != st.session_state["initial_balance"]:
+        st.session_state["initial_balance"] = initial_balance_input
+        st.session_state["forecast_cache"] = None
+        st.rerun()
+
+    security_threshold_input = st.number_input(
+        "Seuil d'alerte sécurité (DH)",
+        min_value=0.0,
+        max_value=1000000.0,
+        value=float(st.session_state["security_threshold"]),
+        step=5000.0,
+        format="%.2f",
+        help="Matelas de sécurité minimal en DH en dessous duquel une alerte de tension est levée."
+    )
+    if security_threshold_input != st.session_state["security_threshold"]:
+        st.session_state["security_threshold"] = security_threshold_input
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("#### 🔄 Données de Démonstration (Maroc)")
+    st.caption("Jeu de simulation réaliste : **Atlas Distribution SARL (Casablanca)** sur 5 mois.")
+
+    with st.popover("Recharger la démo marocaine", use_container_width=True):
+        st.warning("Cette action rechargera le jeu de données démo marocain complet.")
+        if st.button("Confirmer le rechargement démo", type="primary", use_container_width=True):
+            st.session_state["transactions_df"] = dm.reset_to_sample_data()
+            st.session_state["forecast_cache"] = None
+            st.success("Données de démonstration rechargées !")
             st.rerun()
 
-    # Traitement du fichier importé
-    if uploaded_file is not None:
-        file_signature = f"{uploaded_file.name}_{uploaded_file.size}"
-        # Détection d'un nouveau fichier pour ne pas conserver les données précédentes
-        if file_signature != st.session_state.last_file_signature:
-            st.session_state.last_file_signature = file_signature
-            st.session_state.source_donnees = "import"
-            try:
-                if uploaded_file.name.lower().endswith(('.xlsx', '.xls')):
-                    raw_df = pd.read_excel(uploaded_file, engine='openpyxl')
+    st.markdown("---")
+    st.markdown(f"""
+        <div style="font-size: 11px; color: #94A3B8; text-align: center; line-height: 1.4;">
+            <strong>SmartCash AI 🇲🇦 v2.0</strong><br>
+            Fuseau : <code>Africa/Casablanca</code><br>
+            Date : <strong>{now_maroc.strftime('%d/%m/%Y %H:%M')}</strong><br>
+            Gestion Financière & Machine Learning
+        </div>
+    """, unsafe_allow_html=True)
+
+
+# Données actives
+df_current = st.session_state["transactions_df"].copy()
+initial_bal = st.session_state["initial_balance"]
+sec_thresh = st.session_state["security_threshold"]
+
+# Calcul automatique des prévisions par défaut pour alimenter le tableau de bord et les alertes
+if st.session_state["forecast_cache"] is None:
+    try:
+        st.session_state["forecast_cache"] = fm.train_and_forecast_cashflow(
+            df_current,
+            initial_balance=initial_bal,
+            horizon_days=15,
+            model_type="Random Forest (IA)"
+        )
+    except Exception as e:
+        st.session_state["forecast_cache"] = None
+
+forecast_obj = st.session_state["forecast_cache"]
+forecast_df = forecast_obj["forecast_df"] if forecast_obj else None
+
+# Calcul des indicateurs et alertes en DH
+kpis_global = fc.compute_kpis(df_current, initial_balance=initial_bal, forecast_df=forecast_df)
+adv_global = fc.compute_advanced_metrics(df_current, initial_balance=initial_bal)
+alerts_global = fc.detect_alerts_and_recommendations(df_current, initial_balance=initial_bal, forecast_df=forecast_df, security_threshold=sec_thresh)
+
+
+# ==============================================================================
+# PAGE 1 : TABLEAU DE BORD (DASHBOARD)
+# ==============================================================================
+if menu_choice == "📊 Tableau de bord":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">SmartCash AI 🇲🇦 — Tableau de bord Financier</h1>
+            <p class="brand-subtitle">Votre trésorerie, anticipée intelligemment | Contexte Entreprises Maroc (MAD / DH)</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Filtre de période
+    col_f1, col_f2 = st.columns([2, 5])
+    with col_f1:
+        period_choice = st.selectbox(
+            "Période d'analyse :",
+            ["Tout l'historique", "30 derniers jours", "60 derniers jours", "90 derniers jours"]
+        )
+
+    filtered_df = df_current.copy()
+    filtered_df["dt"] = pd.to_datetime(filtered_df["date"])
+    max_d = filtered_df["dt"].max() if not filtered_df.empty else pd.to_datetime(today_maroc)
+
+    if period_choice == "30 derniers jours":
+        filtered_df = filtered_df[filtered_df["dt"] >= (max_d - timedelta(days=30))]
+    elif period_choice == "60 derniers jours":
+        filtered_df = filtered_df[filtered_df["dt"] >= (max_d - timedelta(days=60))]
+    elif period_choice == "90 derniers jours":
+        filtered_df = filtered_df[filtered_df["dt"] >= (max_d - timedelta(days=90))]
+
+    kpis_view = fc.compute_kpis(filtered_df, initial_balance=initial_bal, forecast_df=forecast_df)
+
+    # LIGNE 1 : 4 KPIs de Trésorerie Principaux
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Solde Actuel</div>
+                <div class="kpi-value" style="color: {'#FFFFFF' if kpis_view['solde_actuel'] >= 0 else '#EF4444'};">
+                    {format_dh(kpis_view['solde_actuel'])}
+                </div>
+                <div class="kpi-sub">Liquidités en banque</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Encaissements</div>
+                <div class="kpi-value" style="color: #22C55E;">
+                    +{format_dh(kpis_view['total_encaissements'])}
+                </div>
+                <div class="kpi-sub" style="color: #22C55E;">Recettes & Ventes TTC</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Décaissements</div>
+                <div class="kpi-value" style="color: #EF4444;">
+                    -{format_dh(kpis_view['total_decaissements'])}
+                </div>
+                <div class="kpi-sub" style="color: #EF4444;">Sorties & Charges TTC</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c4:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Solde Prévisionnel</div>
+                <div class="kpi-value" style="color: {'#3B82F6' if kpis_view['solde_previsionnel'] >= 0 else '#EF4444'};">
+                    {format_dh(kpis_view['solde_previsionnel'])}
+                </div>
+                <div class="kpi-sub" style="color: #93C5FD;">Horizon {forecast_df.shape[0] if forecast_df is not None else 0}j (IA)</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+
+    # LIGNE 2 : 4 KPIs de Gestion Marocaine (Créances, Dettes, Paiements à venir, Risque)
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Créances Clients (BFR)</div>
+                <div class="kpi-value" style="color: #38BDF8;">
+                    {format_dh(kpis_view['creances_clients'])}
+                </div>
+                <div class="kpi-sub" style="color: {'#EF4444' if kpis_view['creances_echues'] > 0 else '#94A3B8'};">
+                    Dont échues : {format_dh(kpis_view['creances_echues'])}
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with k2:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Dettes Fournisseurs</div>
+                <div class="kpi-value" style="color: #F87171;">
+                    {format_dh(kpis_view['dettes_fournisseurs'])}
+                </div>
+                <div class="kpi-sub" style="color: {'#EF4444' if kpis_view['dettes_echues'] > 0 else '#94A3B8'};">
+                    Dont échues : {format_dh(kpis_view['dettes_echues'])}
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with k3:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Paiements à venir (30j)</div>
+                <div class="kpi-value" style="color: #FBBF24;">
+                    {format_dh(kpis_view['paiements_a_venir'])}
+                </div>
+                <div class="kpi-sub">Échéances charges & achats</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with k4:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Niveau de Risque</div>
+                <div class="kpi-value" style="color: {kpis_view['risque_couleur']};">
+                    {kpis_view['niveau_risque']}
+                </div>
+                <div class="kpi-sub">
+                    Variation : {kpis_view['variation_pct']:+.1f}% ({format_dh(kpis_view['variation_valeur'])})
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Diagnostic rédigé en langage financier
+    st.info(fc.generate_executive_summary(kpis_view, adv_global, alerts_global))
+
+    # Graphiques Plotly Dark Navy
+    daily_hist = fc.compute_daily_cashflow(filtered_df, initial_balance=initial_bal)
+
+    col_g1, col_g2 = st.columns([7, 5])
+
+    with col_g1:
+        st.subheader("📈 Trajectoire de Trésorerie (Historique & Prévision en DH)")
+        fig_trend = go.Figure()
+
+        # Série historique
+        if not daily_hist.empty:
+            fig_trend.add_trace(go.Scatter(
+                x=daily_hist["date"],
+                y=daily_hist["solde_cumule"],
+                mode="lines",
+                name="Solde Réalisé (DH)",
+                line=dict(color="#3B82F6", width=2.8),
+                hovertemplate="<b>Date</b>: %{x|%d/%m/%Y}<br><b>Solde</b>: %{y:,.2f} DH<extra></extra>"
+            ))
+
+        # Série prévisionnelle IA
+        if forecast_df is not None and not forecast_df.empty:
+            last_hist_pt = daily_hist.iloc[[-1]] if not daily_hist.empty else pd.DataFrame()
+            if not last_hist_pt.empty:
+                raccord_x = [last_hist_pt["date"].iloc[0]] + list(forecast_df["date"])
+                raccord_y = [last_hist_pt["solde_cumule"].iloc[0]] + list(forecast_df["solde_prevu"])
+            else:
+                raccord_x = list(forecast_df["date"])
+                raccord_y = list(forecast_df["solde_prevu"])
+
+            fig_trend.add_trace(go.Scatter(
+                x=raccord_x,
+                y=raccord_y,
+                mode="lines+markers",
+                name="Solde Prévu IA (DH)",
+                line=dict(color="#A78BFA", width=2.6, dash="dash"),
+                marker=dict(size=4),
+                hovertemplate="<b>Date</b>: %{x|%d/%m/%Y}<br><b>Solde prévisionnel</b>: %{y:,.2f} DH<extra></extra>"
+            ))
+
+        # Seuil de sécurité
+        fig_trend.add_hline(
+            y=sec_thresh,
+            line_dash="dot",
+            line_color="#F59E0B",
+            annotation_text=f"Seuil de sécurité ({format_dh(sec_thresh)})",
+            annotation_position="bottom right",
+            annotation_font_color="#FBBF24"
+        )
+        
+        # Ligne de découvert
+        fig_trend.add_hline(
+            y=0,
+            line_dash="solid",
+            line_color="#EF4444",
+            annotation_text="Découvert bancaire (0 DH)",
+            annotation_position="top left",
+            annotation_font_color="#EF4444"
+        )
+
+        fig_trend.update_layout(
+            height=390,
+            margin=dict(l=20, r=20, t=25, b=20),
+            paper_bgcolor="#172A4D",
+            plot_bgcolor="#0B1630",
+            font=dict(color="#F1F5F9"),
+            xaxis=dict(gridcolor="#23385E", zerolinecolor="#23385E"),
+            yaxis=dict(gridcolor="#23385E", zerolinecolor="#23385E", ticksuffix=" DH"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+
+    with col_g2:
+        st.subheader("🥧 Répartition des Charges (PCGE)")
+        cat_expenses = adv_global.get("cat_expenses", pd.DataFrame())
+        if not cat_expenses.empty:
+            fig_pie = px.pie(
+                cat_expenses,
+                names="categorie",
+                values="montant",
+                hole=0.45,
+                color_discrete_sequence=px.colors.sequential.Blues_r
+            )
+            fig_pie.update_traces(
+                textposition='inside',
+                textinfo='percent+label',
+                hovertemplate="<b>%{label}</b><br>Montant: %{value:,.2f} DH<br>Part: %{percent}<extra></extra>"
+            )
+            fig_pie.update_layout(
+                height=390,
+                margin=dict(l=10, r=10, t=10, b=10),
+                paper_bgcolor="#172A4D",
+                font=dict(color="#F1F5F9"),
+                showlegend=False
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
+        else:
+            st.info("Aucune dépense disponible pour la répartition.")
+
+    # Graphique barres comparatif mensuel des flux
+    st.subheader("📊 Comparaison des Flux : Encaissements vs Décaissements (MAD)")
+    df_flux = filtered_df.copy()
+    df_flux["mois"] = pd.to_datetime(df_flux["date"]).dt.strftime("%Y-%m")
+    flux_monthly = df_flux.groupby(["mois", "type"])["montant"].sum().unstack(fill_value=0.0).reset_index()
+    if "Encaissement" not in flux_monthly.columns:
+        flux_monthly["Encaissement"] = 0.0
+    if "Décaissement" not in flux_monthly.columns:
+        flux_monthly["Décaissement"] = 0.0
+
+    fig_bars = go.Figure()
+    fig_bars.add_trace(go.Bar(
+        x=flux_monthly["mois"],
+        y=flux_monthly["Encaissement"],
+        name="Encaissements (DH)",
+        marker_color="#22C55E",
+        hovertemplate="<b>%{x}</b><br>Encaissements: %{y:,.2f} DH<extra></extra>"
+    ))
+    fig_bars.add_trace(go.Bar(
+        x=flux_monthly["mois"],
+        y=flux_monthly["Décaissement"],
+        name="Décaissements (DH)",
+        marker_color="#EF4444",
+        hovertemplate="<b>%{x}</b><br>Décaissements: %{y:,.2f} DH<extra></extra>"
+    ))
+    fig_bars.update_layout(
+        barmode="group",
+        height=320,
+        margin=dict(l=20, r=20, t=20, b=20),
+        paper_bgcolor="#172A4D",
+        plot_bgcolor="#0B1630",
+        font=dict(color="#F1F5F9"),
+        xaxis=dict(title="Mois", gridcolor="#23385E"),
+        yaxis=dict(title="Volume (DH)", gridcolor="#23385E", ticksuffix=" DH"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig_bars, use_container_width=True)
+
+
+# ==============================================================================
+# PAGE 2 : GESTION DES OPÉRATIONS & FACTURATION
+# ==============================================================================
+elif menu_choice == "💳 Opérations & Facturation":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">Opérations Financières & Facturation (Maroc)</h1>
+            <p class="brand-subtitle">Gestion des factures clients/fournisseurs, TVA marocaine (HT, TVA, TTC) et suivi des échéances</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    tab_consulter, tab_echeances, tab_ajouter, tab_modifier = st.tabs([
+        "📋 Grand Livre des Opérations",
+        "📑 Suivi Créances & Dettes (Échéancier)",
+        "➕ Enregistrer une Facture / Opération",
+        "✏️ Modifier ou Supprimer"
+    ])
+
+    # 1. AJOUT D'UNE OPÉRATION
+    with tab_ajouter:
+        st.subheader("Enregistrer une Facture ou une Opération financière")
+        st.caption("Calcul automatique de la TVA marocaine et cohérence HT / TTC.")
+        
+        with st.form("form_add_morocco_op", clear_on_submit=True):
+            f_col1, f_col2, f_col3 = st.columns(3)
+            with f_col1:
+                new_date = st.date_input("Date de l'opération", value=today_maroc)
+                new_ech = st.date_input("Date d'échéance de paiement", value=today_maroc + timedelta(days=30))
+                new_type = st.selectbox("Type d'opération", ["Encaissement", "Décaissement"])
+                new_partenaire = st.text_input("Partenaire (Client ou Fournisseur)", placeholder="Ex: OCP Solutions, SNTL, Lydec...")
+
+            with f_col2:
+                cat_choices = dm.CATEGORIES_ENCAISSEMENT if new_type == "Encaissement" else dm.CATEGORIES_DECAISSEMENT
+                new_cat = st.selectbox("Catégorie (Plan Comptable PCGE)", cat_choices)
+                new_libelle = st.text_input("Libellé / Réf Facture", placeholder="Ex: Facture Client #FC-2026-102")
+                new_statut = st.selectbox("Statut de réalisation", ["Réalisé", "Prévu"], index=1 if new_ech > today_maroc else 0)
+
+            with f_col3:
+                new_taux_tva = st.selectbox("Taux de TVA Maroc (%)", TAUX_TVA_MAROC, index=0, format_func=lambda x: f"{x:.0f}% (CGI Maroc)" if x > 0 else "0% (Exonéré)")
+                saisie_mode = st.radio("Saisir par :", ["Montant HT", "Montant TTC"], horizontal=True)
+                if saisie_mode == "Montant HT":
+                    input_ht = st.number_input("Montant Hors Taxes (DH)", min_value=0.01, max_value=5000000.0, value=25000.0, step=500.0, format="%.2f")
+                    calc_tva = round(input_ht * (new_taux_tva / 100.0), 2)
+                    calc_ttc = round(input_ht + calc_tva, 2)
+                    st.info(f"👉 **TVA :** {format_dh(calc_tva)} | **Total TTC :** {format_dh(calc_ttc)}")
+                    final_ht = input_ht
+                    final_ttc = calc_ttc
                 else:
-                    # Lecture CSV robuste (gestion de séparateurs , et ;)
-                    uploaded_file.seek(0)
-                    try:
-                        raw_df = pd.read_csv(uploaded_file, sep=None, engine='python', encoding='utf-8')
-                    except Exception:
-                        uploaded_file.seek(0)
-                        raw_df = pd.read_csv(uploaded_file, sep=None, engine='python', encoding='latin1')
-                st.session_state.raw_uploaded_df = raw_df
-            except Exception as e:
-                st.error(f"Erreur lors de la lecture du fichier : {e}")
-                st.session_state.raw_uploaded_df = None
+                    input_ttc = st.number_input("Montant TTC / Trésorerie (DH)", min_value=0.01, max_value=5000000.0, value=30000.0, step=500.0, format="%.2f")
+                    calc_ht = round(input_ttc / (1.0 + (new_taux_tva / 100.0)), 2)
+                    calc_tva = round(input_ttc - calc_ht, 2)
+                    st.info(f"👉 **HT calculé :** {format_dh(calc_ht)} | **TVA :** {format_dh(calc_tva)}")
+                    final_ht = calc_ht
+                    final_ttc = input_ttc
 
-        if st.session_state.raw_uploaded_df is not None:
-            raw_df = st.session_state.raw_uploaded_df
-            st.markdown("---")
-            st.markdown("##### Correspondance et vérification des colonnes")
+            new_commentaire = st.text_input("Commentaire / Modalité de règlement", placeholder="Ex: Virement bancaire, chèque barré, traite 60 jours...")
 
-            # Détection automatique
-            mapping_auto = detecter_colonnes(raw_df.columns)
-            colonnes_dispos = list(raw_df.columns)
+            submit_add = st.form_submit_button("💾 Enregistrer l'opération en Dirhams", type="primary", use_container_width=True)
 
-            c_map1, c_map2, c_map3, c_map4 = st.columns(4)
-            with c_map1:
-                idx_date = colonnes_dispos.index(mapping_auto['date']) if mapping_auto['date'] in colonnes_dispos else 0
-                col_sel_date = st.selectbox("Colonne Date :", colonnes_dispos, index=idx_date)
-            with c_map2:
-                idx_lib = colonnes_dispos.index(mapping_auto['libelle']) if mapping_auto['libelle'] in colonnes_dispos else (1 if len(colonnes_dispos) > 1 else 0)
-                col_sel_lib = st.selectbox("Colonne Libellé :", colonnes_dispos, index=idx_lib)
-            with c_map3:
-                idx_typ = colonnes_dispos.index(mapping_auto['type']) if mapping_auto['type'] in colonnes_dispos else (2 if len(colonnes_dispos) > 2 else 0)
-                col_sel_type = st.selectbox("Colonne Type :", colonnes_dispos, index=idx_typ)
-            with c_map4:
-                idx_mnt = colonnes_dispos.index(mapping_auto['montant']) if mapping_auto['montant'] in colonnes_dispos else (3 if len(colonnes_dispos) > 3 else 0)
-                col_sel_montant = st.selectbox("Colonne Montant :", colonnes_dispos, index=idx_mnt)
+            if submit_add:
+                if not new_libelle.strip():
+                    st.error("Veuillez renseigner un libellé ou une référence pour l'opération.")
+                else:
+                    updated_df = dm.add_transaction(
+                        date_op=str(new_date),
+                        libelle=new_libelle,
+                        type_op=new_type,
+                        categorie=new_cat,
+                        montant=final_ttc,
+                        statut=new_statut,
+                        commentaire=new_commentaire,
+                        date_echeance=str(new_ech),
+                        partenaire=new_partenaire,
+                        montant_ht=final_ht,
+                        taux_tva=new_taux_tva
+                    )
+                    st.session_state["transactions_df"] = updated_df
+                    st.session_state["forecast_cache"] = None
+                    st.success(f"Opération '{new_libelle}' enregistrée avec succès ({format_dh(final_ttc)}) !")
+                    st.rerun()
 
-            # Validation des lignes
-            df_valide, erreurs_trouvees, stats_v = valider_et_traiter_operations(
-                raw_df, col_sel_date, col_sel_lib, col_sel_type, col_sel_montant
+    # 2. CONSULTATION & RECHERCHE
+    with tab_consulter:
+        fil_c1, fil_c2, fil_c3, fil_c4 = st.columns([3, 2, 2, 2])
+        with fil_c1:
+            search_query = st.text_input("🔍 Rechercher par libellé, partenaire ou note", "")
+        with fil_c2:
+            type_filter = st.selectbox("Filtrer par type", ["Tous", "Encaissement", "Décaissement"])
+        with fil_c3:
+            cat_filter = st.selectbox("Filtrer par catégorie PCGE", ["Toutes"] + dm.ALL_CATEGORIES)
+        with fil_c4:
+            statut_filter = st.selectbox("Filtrer par statut", ["Tous", "Réalisé", "Prévu"])
+
+        view_df = df_current.copy()
+
+        if search_query.strip():
+            q = search_query.lower().strip()
+            view_df = view_df[
+                view_df["libelle"].astype(str).str.lower().str.contains(q) |
+                view_df["partenaire"].astype(str).str.lower().str.contains(q) |
+                view_df["commentaire"].astype(str).str.lower().str.contains(q)
+            ]
+        if type_filter != "Tous":
+            view_df = view_df[view_df["type"] == type_filter]
+        if cat_filter != "Toutes":
+            view_df = view_df[view_df["categorie"] == cat_filter]
+        if statut_filter != "Tous":
+            view_df = view_df[view_df["statut"] == statut_filter]
+
+        st.caption(f"Affichage de **{len(view_df)}** opération(s) sur **{len(df_current)}** au total.")
+
+        # Affichage avec formatage en Dirhams
+        display_df = view_df.copy()
+        display_df["Montant HT (DH)"] = display_df["montant_ht"].apply(lambda x: format_dh(x, include_symbol=False))
+        display_df["Taux TVA"] = display_df["taux_tva"].apply(lambda x: f"{x:.0f}%")
+        display_df["TVA (DH)"] = display_df["montant_tva"].apply(lambda x: format_dh(x, include_symbol=False))
+        display_df["Montant TTC (DH)"] = display_df.apply(lambda r: f"{'+' if r['type'] == 'Encaissement' else '-'}{format_dh(r['montant'])}", axis=1)
+
+        cols_to_show = [
+            "date", "date_echeance", "libelle", "partenaire", "type",
+            "categorie", "Montant HT (DH)", "Taux TVA", "TVA (DH)",
+            "Montant TTC (DH)", "statut", "statut_paiement"
+        ]
+        
+        st.dataframe(
+            display_df[cols_to_show].rename(columns={
+                "date": "Date Op.",
+                "date_echeance": "Échéance",
+                "libelle": "Libellé / Facture",
+                "partenaire": "Partenaire",
+                "type": "Type",
+                "categorie": "Catégorie PCGE",
+                "statut": "Statut",
+                "statut_paiement": "Paiement"
+            }),
+            use_container_width=True,
+            height=460
+        )
+
+    # 3. SUIVI DES CRÉANCES ET DETTES (ÉCHÉANCIER)
+    with tab_echeances:
+        st.subheader("📑 Échéancier : Suivi des Créances Clients & Dettes Fournisseurs")
+        st.write("Ce tableau isole les opérations prévues non encore dénouées pour un pilotage strict du BFR.")
+
+        col_ec1, col_ec2 = st.columns(2)
+        
+        # Créances clients
+        with col_ec1:
+            st.markdown("#### 🟢 Créances Clients à Recouvrer")
+            cr_df = df_current[(df_current["type"] == "Encaissement") & (df_current["statut"] == "Prévu")].copy()
+            if not cr_df.empty:
+                cr_df["TTC (DH)"] = cr_df["montant"].apply(format_dh)
+                st.dataframe(
+                    cr_df[["date_echeance", "partenaire", "libelle", "TTC (DH)", "statut_paiement"]].rename(columns={
+                        "date_echeance": "Échéance", "partenaire": "Client", "libelle": "Facture", "statut_paiement": "État"
+                    }),
+                    use_container_width=True
+                )
+            else:
+                st.info("Aucune créance client en attente.")
+
+        # Dettes fournisseurs
+        with col_ec2:
+            st.markdown("#### 🔴 Dettes Fournisseurs à Régler")
+            det_df = df_current[(df_current["type"] == "Décaissement") & (df_current["statut"] == "Prévu")].copy()
+            if not det_df.empty:
+                det_df["TTC (DH)"] = det_df["montant"].apply(format_dh)
+                st.dataframe(
+                    det_df[["date_echeance", "partenaire", "libelle", "TTC (DH)", "statut_paiement"]].rename(columns={
+                        "date_echeance": "Échéance", "partenaire": "Fournisseur", "libelle": "Facture", "statut_paiement": "État"
+                    }),
+                    use_container_width=True
+                )
+            else:
+                st.info("Aucune dette fournisseur en attente.")
+
+    # 4. MODIFIER OU SUPPRIMER
+    with tab_modifier:
+        st.subheader("Modifier ou Supprimer une opération")
+        if df_current.empty:
+            st.info("Aucune opération à modifier.")
+        else:
+            op_dict = {
+                f"{row['date']} | {row['type']} | {row.get('partenaire', 'Divers')} : {row['libelle']} ({format_dh(row['montant'])}) [ID:{row['id']}]": row["id"]
+                for _, row in df_current.iterrows()
+            }
+            sel_label = st.selectbox("Sélectionnez l'opération à traiter :", list(op_dict.keys()))
+            sel_id = op_dict[sel_label]
+            row_data = df_current[df_current["id"] == sel_id].iloc[0]
+
+            with st.form("form_edit_morocco_op"):
+                me_col1, me_col2 = st.columns(2)
+                with me_col1:
+                    e_date = st.date_input("Date", value=datetime.strptime(row_data["date"], "%Y-%m-%d").date())
+                    e_ech = st.date_input("Échéance", value=datetime.strptime(str(row_data.get("date_echeance", row_data["date"])), "%Y-%m-%d").date())
+                    e_lib = st.text_input("Libellé", value=row_data["libelle"])
+                    e_part = st.text_input("Partenaire", value=str(row_data.get("partenaire", "Divers")))
+                    e_type = st.selectbox("Type", ["Encaissement", "Décaissement"], index=0 if row_data["type"] == "Encaissement" else 1)
+
+                with me_col2:
+                    current_cat = row_data["categorie"]
+                    cat_opts = dm.ALL_CATEGORIES
+                    c_idx = cat_opts.index(current_cat) if current_cat in cat_opts else 0
+                    e_cat = st.selectbox("Catégorie PCGE", cat_opts, index=c_idx)
+                    
+                    e_taux = st.selectbox("Taux de TVA (%)", TAUX_TVA_MAROC, index=TAUX_TVA_MAROC.index(float(row_data.get("taux_tva", 20.0))) if float(row_data.get("taux_tva", 20.0)) in TAUX_TVA_MAROC else 0)
+                    e_ttc = st.number_input("Montant TTC (DH)", min_value=0.01, value=float(row_data["montant"]), step=100.0, format="%.2f")
+                    e_statut = st.selectbox("Statut", ["Réalisé", "Prévu"], index=0 if row_data["statut"] == "Réalisé" else 1)
+                    e_comm = st.text_input("Commentaire", value=str(row_data.get("commentaire", "")))
+
+                b_col1, b_col2 = st.columns(2)
+                with b_col1:
+                    submit_mod = st.form_submit_button("💾 Mettre à jour l'opération", type="primary", use_container_width=True)
+                with b_col2:
+                    submit_del = st.form_submit_button("🗑️ Supprimer cette opération", use_container_width=True)
+
+                if submit_mod:
+                    calc_ht = round(e_ttc / (1.0 + (e_taux / 100.0)), 2)
+                    updated_df = dm.update_transaction(
+                        op_id=sel_id,
+                        date_op=str(e_date),
+                        libelle=e_lib,
+                        type_op=e_type,
+                        categorie=e_cat,
+                        montant=e_ttc,
+                        statut=e_statut,
+                        commentaire=e_comm,
+                        date_echeance=str(e_ech),
+                        partenaire=e_part,
+                        montant_ht=calc_ht,
+                        taux_tva=e_taux
+                    )
+                    st.session_state["transactions_df"] = updated_df
+                    st.session_state["forecast_cache"] = None
+                    st.success("Opération modifiée avec succès !")
+                    st.rerun()
+
+                if submit_del:
+                    updated_df = dm.delete_transaction(sel_id)
+                    st.session_state["transactions_df"] = updated_df
+                    st.session_state["forecast_cache"] = None
+                    st.warning("Opération supprimée.")
+                    st.rerun()
+
+
+# ==============================================================================
+# PAGE 3 : IMPORTATION DES DONNÉES
+# ==============================================================================
+elif menu_choice == "📥 Importation de données":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">Importation des Données Financières (Maroc)</h1>
+            <p class="brand-subtitle">Intégrez vos fichiers Excel (.xlsx) ou CSV avec reconnaissance des champs HT, TVA, TTC et Échéances</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    col_imp1, col_imp2 = st.columns([5, 3])
+
+    with col_imp2:
+        st.markdown("### 📥 Modèles téléchargeables (Maroc)")
+        st.write("Téléchargez un modèle pré-configuré avec les colonnes attendues et la TVA marocaine :")
+        
+        if os.path.exists(dm.TEMPLATE_CSV):
+            with open(dm.TEMPLATE_CSV, "rb") as f_csv:
+                st.download_button(
+                    label="📄 Télécharger le Modèle CSV (DH)",
+                    data=f_csv,
+                    file_name="modele_smartcash_maroc.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+        if os.path.exists(dm.TEMPLATE_XLSX):
+            with open(dm.TEMPLATE_XLSX, "rb") as f_xlsx:
+                st.download_button(
+                    label="📊 Télécharger le Modèle Excel (.xlsx)",
+                    data=f_xlsx,
+                    file_name="modele_smartcash_maroc.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+
+        st.markdown("""
+            <div style="background-color: #172A4D; border: 1px solid #23385E; border-radius: 8px; padding: 14px; margin-top: 15px; font-size: 13px;">
+                <strong>Colonnes prises en charge :</strong>
+                <ul>
+                    <li><code>Date</code> (Date de facturation / opération)</li>
+                    <li><code>Date Échéance</code> (Date limite de paiement)</li>
+                    <li><code>Libellé</code> & <code>Partenaire</code> (Client ou Fournisseur)</li>
+                    <li><code>Type</code> (Encaissement ou Décaissement)</li>
+                    <li><code>Montant HT</code> & <code>Taux TVA</code> (ex: 20%, 14%, 10%, 7%, 0%)</li>
+                    <li><code>Montant TTC</code> (ou montant total en DH)</li>
+                    <li><code>Statut</code> (Réalisé ou Prévu)</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_imp1:
+        st.markdown("### 📤 Téléverser un fichier financier")
+        uploaded_file = st.file_uploader(
+            "Sélectionnez votre fichier Excel (.xlsx, .xls) ou CSV (.csv)",
+            type=["csv", "xlsx", "xls"]
+        )
+
+        if uploaded_file is not None:
+            with st.spinner("Analyse et validation de conformité marocaine en cours..."):
+                valid_df, errors, duplicates = dm.parse_and_validate_import(
+                    uploaded_file, uploaded_file.name
+                )
+
+            if errors:
+                st.error("Des anomalies ont été détectées lors de l'analyse :")
+                for err in errors[:5]:
+                    st.write(f"- ⚠️ {err}")
+                if len(errors) > 5:
+                    st.caption(f"... et {len(errors) - 5} autre(s) erreur(s).")
+
+            if valid_df is not None and not valid_df.empty:
+                st.success(f"✅ **{len(valid_df)} opération(s) valide(s)** détectée(s) !")
+                if duplicates > 0:
+                    st.warning(f"ℹ️ {duplicates} doublon(s) potentiel(s) détecté(s).")
+
+                st.markdown("#### Aperçu des données à intégrer (Montants en DH) :")
+                preview_show = valid_df.copy()
+                preview_show["TTC (DH)"] = preview_show["montant"].apply(format_dh)
+                st.dataframe(
+                    preview_show[["date", "date_echeance", "libelle", "partenaire", "type", "TTC (DH)", "statut"]].head(8),
+                    use_container_width=True
+                )
+
+                st.markdown("---")
+                mode_import = st.radio(
+                    "Mode d'intégration :",
+                    ["Fusionner avec les données existantes (Conserve l'historique)", "Remplacer entièrement les données existantes"]
+                )
+
+                if st.button("🚀 Confirmer l'intégration dans SmartCash AI", type="primary", use_container_width=True):
+                    if "Fusionner" in mode_import:
+                        final_df = pd.concat([st.session_state["transactions_df"], valid_df], ignore_index=True)
+                    else:
+                        final_df = valid_df
+
+                    final_df = final_df.sort_values(by=["date", "type"], ascending=[True, False]).reset_index(drop=True)
+                    dm.save_transactions(final_df)
+                    st.session_state["transactions_df"] = final_df
+                    st.session_state["forecast_cache"] = None
+                    st.success(f"🎉 {len(valid_df)} opérations importées avec succès !")
+                    st.rerun()
+
+
+# ==============================================================================
+# PAGE 4 : PRÉVISION INTELLIGENTE PAR IA (MAD)
+# ==============================================================================
+elif menu_choice == "🤖 Prévision IA (MAD)":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">Moteur de Prévision Intelligente par IA (MAD)</h1>
+            <p class="brand-subtitle">Modélisation temporelle et prédiction du solde de trésorerie en Dirhams Marocains</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.subheader("⚙️ Configuration du modèle prédictif")
+    col_fc1, col_fc2, col_fc3 = st.columns(3)
+    with col_fc1:
+        horizon_choice = st.selectbox("Horizon de projection", [7, 15, 30], index=1, format_func=lambda x: f"{x} jours")
+    with col_fc2:
+        model_choice = st.selectbox("Algorithme d'apprentissage", ["Random Forest (IA)", "Régression Ridge (Linéaire régularisé)"])
+    with col_fc3:
+        btn_recalc = st.button("🔄 Entraîner & Projeter la trésorerie", type="primary", use_container_width=True)
+
+    if btn_recalc or st.session_state["forecast_cache"] is None:
+        with st.spinner("Entraînement du modèle sur les séries temporelles marocaines..."):
+            st.session_state["forecast_cache"] = fm.train_and_forecast_cashflow(
+                df_current,
+                initial_balance=initial_bal,
+                horizon_days=horizon_choice,
+                model_type=model_choice
             )
 
-            st.session_state.operations_valides = df_valide
-            st.session_state.erreurs_import = erreurs_trouvees
-            st.session_state.stats_import = stats_v
+    res = st.session_state["forecast_cache"]
 
-            # Rapport d'intégrité
-            if stats_v['nb_erreurs'] == 0:
-                st.success(f"Fichier validé avec succès : **{stats_v['lignes_valides']} opérations conformes** prêtes à être analysées.")
-            else:
-                st.warning(f"Validation partielle : **{stats_v['lignes_valides']} lignes valides** retenues sur {stats_v['total_lignes']} au total ({stats_v['nb_erreurs']} anomalies détectées).")
-                with st.expander("Consulter le détail des anomalies détectées"):
-                    for err in erreurs_trouvees[:20]:
-                        st.write(f"- {err}")
-                    if len(erreurs_trouvees) > 20:
-                        st.caption(f"... et {len(erreurs_trouvees) - 20} autres anomalies.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# Vérification de l'existence d'opérations
-df_ops = st.session_state.operations_valides
-if df_ops is None or df_ops.empty:
-    st.info("Aucune opération disponible. Veuillez importer un fichier CSV/Excel ou charger les données de démonstration ci-dessus.")
-    st.stop()
-
-# ==============================================================================
-# 8. SECTION 2 : INDICATEURS FINANCIERS & CALCULS AUTOMATIQUES (OBJECTIF 3)
-# ==============================================================================
-solde_initial = float(st.session_state.solde_initial_user) if st.session_state.solde_initial_connu else None
-total_encaissements = float(df_ops[df_ops['Type'] == 'Encaissement']['Montant'].sum())
-total_decaissements = float(df_ops[df_ops['Type'] == 'Décaissement']['Montant'].sum())
-solde_net = total_encaissements - total_decaissements
-
-if solde_initial is not None:
-    solde_final = solde_initial + solde_net
-else:
-    solde_final = None
-
-# Détermination du statut visuel du solde final
-if solde_final is not None:
-    if solde_final > st.session_state.seuil_securite:
-        box_class_final = "kpi-box-turquoise"
-        num_class_final = "kpi-number-turquoise"
-        statut_libelle = "Favorable (Au-dessus du seuil)"
-    elif 0 <= solde_final <= st.session_state.seuil_securite:
-        box_class_final = "kpi-box-orange"
-        num_class_final = "kpi-number-orange"
-        statut_libelle = "Vigilance (Inférieur au seuil)"
+    if res is None:
+        st.error("Données insuffisantes pour générer une prévision. Veuillez saisir ou importer des opérations.")
     else:
-        box_class_final = "kpi-box-red"
-        num_class_final = "kpi-number-red"
-        statut_libelle = "Risque de découvert bancaire"
-else:
-    box_class_final = "kpi-box-navy"
-    num_class_final = ""
-    statut_libelle = "Solde initial non renseigné"
+        fc_df = res["forecast_df"]
+        eval_metrics = res["evaluation"]
+        model_info = res["model_info"]
+        is_fallback = res["is_fallback"]
 
-net_class = "kpi-number-turquoise" if solde_net >= 0 else "kpi-number-red"
-net_prefix = "+" if solde_net >= 0 else ""
+        if is_fallback:
+            st.warning(f"⚠️ **Information méthodologique :** {eval_metrics.get('reason')}")
+        else:
+            st.success(f"✅ Modèle entraîné : **{model_info['name']}** sur l'historique réalisé.")
 
-st.markdown(f"""
-<div class="kpi-container">
-    <div class="kpi-box kpi-box-navy">
-        <div class="kpi-title">Solde initial</div>
-        <div class="kpi-number">{format_dh(solde_initial)}</div>
-        <div class="kpi-foot">{"Disponibilités en banque" if solde_initial is not None else "Montant non précisé"}</div>
-    </div>
-    <div class="kpi-box kpi-box-turquoise">
-        <div class="kpi-title">Total Encaissements</div>
-        <div class="kpi-number kpi-number-turquoise">+ {format_dh(total_encaissements)}</div>
-        <div class="kpi-foot">{len(df_ops[df_ops['Type'] == 'Encaissement'])} règlements reçus</div>
-    </div>
-    <div class="kpi-box kpi-box-navy">
-        <div class="kpi-title">Total Décaissements</div>
-        <div class="kpi-number">- {format_dh(total_decaissements)}</div>
-        <div class="kpi-foot">{len(df_ops[df_ops['Type'] == 'Décaissement'])} sorties de fonds</div>
-    </div>
-    <div class="kpi-box kpi-box-navy">
-        <div class="kpi-title">Solde net de période</div>
-        <div class="kpi-number {net_class}">{net_prefix}{format_dh(solde_net)}</div>
-        <div class="kpi-foot">Encaissements − Décaissements</div>
-    </div>
-    <div class="kpi-box {box_class_final}">
-        <div class="kpi-title">Solde final calculé</div>
-        <div class="kpi-number {num_class_final}">{format_dh(solde_final)}</div>
-        <div class="kpi-foot">{statut_libelle}</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+        # Graphique principal Plotly Dark
+        st.markdown("### 📊 Trajectoire Prévisionnelle & Bornes d'Incertitude (DH)")
+        daily_hist = fc.compute_daily_cashflow(df_current[df_current["statut"] == "Réalisé"], initial_balance=initial_bal)
 
-# ==============================================================================
-# 9. SECTION 3 : TABLEAU DES OPÉRATIONS CHRONOLOGIQUES (OBJECTIF 2 & 3)
-# ==============================================================================
-df_chronologique = calculer_solde_cumule(df_ops, solde_initial)
+        fig_pred = go.Figure()
 
-st.markdown("""
-<div class="content-card">
-    <div class="card-title">Tableau des opérations comptables</div>
-    <div class="card-subtitle">Opérations classées par ordre chronologique avec calcul du solde cumulé ligne par ligne.</div>
-""", unsafe_allow_html=True)
+        if not daily_hist.empty:
+            fig_pred.add_trace(go.Scatter(
+                x=daily_hist["date"],
+                y=daily_hist["solde_cumule"],
+                mode="lines",
+                name="Historique Réalisé (DH)",
+                line=dict(color="#3B82F6", width=2.8)
+            ))
 
-col_f1, col_f2, col_f3 = st.columns([1.5, 2, 1.5])
-with col_f1:
-    filtre_type = st.selectbox("Filtrer par type :", ["Tous", "Encaissements", "Décaissements"])
-with col_f2:
-    recherche_lib = st.text_input("Rechercher dans les libellés :", placeholder="Ex: Client, Salaire, Loyer...")
-with col_f3:
-    st.write("")
-    st.write(f"**{len(df_chronologique)} opérations au total**")
-
-# Application des filtres
-df_vue = df_chronologique.copy()
-if filtre_type == "Encaissements":
-    df_vue = df_vue[df_vue['Type'] == 'Encaissement']
-elif filtre_type == "Décaissements":
-    df_vue = df_vue[df_vue['Type'] == 'Décaissement']
-
-if recherche_lib:
-    df_vue = df_vue[df_vue['Libellé'].str.contains(recherche_lib, case=False, na=False)]
-
-# Formatage pour affichage dans le tableau
-df_table_display = df_vue.copy()
-df_table_display['Date'] = pd.to_datetime(df_table_display['Date']).dt.strftime('%d/%m/%Y')
-
-formatters = {
-    'Montant': lambda x: format_dh(x),
-    'Solde_Cumule_DH': lambda x: format_dh(x) if x is not None else "Indéterminé"
-}
-
-df_table_display.rename(columns={
-    'Solde_Cumule_DH': 'Solde Cumulé (DH)',
-    'Montant': 'Montant (DH)'
-}, inplace=True)
-
-st.dataframe(
-    df_table_display.style.format({
-        'Montant (DH)': lambda x: format_dh(x),
-        'Solde Cumulé (DH)': lambda x: format_dh(x) if pd.notna(x) else "Indéterminé"
-    }),
-    use_container_width=True,
-    height=320
-)
-
-# Export des opérations nettoyées en CSV
-csv_export = df_chronologique.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-st.download_button(
-    label="Exporter les opérations traitées (CSV)",
-    data=csv_export,
-    file_name="smartcash_operations_traitees.csv",
-    mime="text/csv"
-)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# ==============================================================================
-# 10. SECTION 4 : GRAPHIQUES D'ANALYSE PROFESSIONNELS (OBJECTIF 4)
-# ==============================================================================
-st.markdown("""
-<div class="content-card">
-    <div class="card-title">Graphiques d'analyse de trésorerie</div>
-    <div class="card-subtitle">Visualisation chronologique des flux et trajectoire du solde cumulé.</div>
-""", unsafe_allow_html=True)
-
-col_chart1, col_chart2 = st.columns([1.6, 1.2])
-
-with col_chart1:
-    st.markdown("**Évolution de la trésorerie dans le temps**")
-    
-    if solde_initial is not None and not df_chronologique.empty:
-        # Agrégation par jour pour une courbe fluide
-        df_daily = df_chronologique.groupby(df_chronologique['Date'].dt.date)['Solde_Cumule_DH'].last().reset_index()
-        
-        fig_evol = go.Figure()
-        
-        # Courbe principale (Turquoise #087F8C)
-        fig_evol.add_trace(go.Scatter(
-            x=df_daily['Date'],
-            y=df_daily['Solde_Cumule_DH'],
-            mode='lines+markers',
-            name='Solde Cumulé (DH)',
-            line=dict(color='#087F8C', width=2.5),
-            marker=dict(size=6, color='#17365D'),
-            hovertemplate='%{x|%d/%m/%Y}<br>Solde : %{y:,.2f} DH<extra></extra>'
+        # Intervalle de confiance
+        fig_pred.add_trace(go.Scatter(
+            x=list(fc_df["date"]) + list(fc_df["date"])[::-1],
+            y=list(fc_df["borne_sup"]) + list(fc_df["borne_inf"])[::-1],
+            fill='toself',
+            fillcolor='rgba(167, 139, 250, 0.18)',
+            line=dict(color='rgba(255,255,255,0)'),
+            name="Intervalle d'Incertitude (80%)",
+            showlegend=True
         ))
-        
-        # Ligne de seuil de sécurité (Orange #D97706)
-        fig_evol.add_hline(
-            y=st.session_state.seuil_securite,
-            line_dash='dot',
-            line_color='#D97706',
-            line_width=1.5,
-            annotation_text=f"Seuil de sécurité ({format_dh(st.session_state.seuil_securite)})",
-            annotation_position="bottom right",
-            annotation_font=dict(color="#D97706", size=10)
-        )
-        
-        # Ligne de référence à 0 DH (Rouge #DC2626)
-        fig_evol.add_hline(
-            y=0,
-            line_color='#DC2626',
-            line_width=1.5,
-            annotation_text="Ligne de découvert (0 DH)",
-            annotation_position="top right",
-            annotation_font=dict(color="#DC2626", size=10)
-        )
-        
-        fig_evol.update_layout(
-            paper_bgcolor="#FFFFFF",
-            plot_bgcolor="#FFFFFF",
-            font=dict(color="#17365D", family="Plus Jakarta Sans"),
-            height=360,
-            margin=dict(l=20, r=20, t=40, b=20),
-            xaxis=dict(
-                gridcolor="#E2E8F0",
-                linecolor="#DCE5EF",
-                tickfont=dict(color="#475569", size=10),
-                title="Date de l'opération"
-            ),
-            yaxis=dict(
-                gridcolor="#E2E8F0",
-                linecolor="#DCE5EF",
-                tickfont=dict(color="#475569", size=10),
-                title="Montant (DH)",
-                zeroline=False
-            ),
-            legend=dict(orientation="h", y=1.08, x=0)
-        )
-        st.plotly_chart(fig_evol, use_container_width=True)
-    else:
-        st.info("Renseignez un solde initial pour tracer la courbe d'évolution du solde cumulé.")
 
-with col_chart2:
-    st.markdown("**Encaissements contre Décaissements**")
-    
-    # Donut chart de répartition des flux
-    fig_comp = go.Figure(data=[go.Pie(
-        labels=["Encaissements", "Décaissements"],
-        values=[total_encaissements, total_decaissements],
-        hole=0.55,
-        marker=dict(colors=["#087F8C", "#E11D48"], line=dict(color="#FFFFFF", width=2)),
-        textinfo='percent+label',
-        hoverinfo='label+value+percent'
-    )])
-    
-    fig_comp.update_layout(
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        font=dict(color="#17365D", family="Plus Jakarta Sans"),
-        height=360,
-        margin=dict(l=20, r=20, t=40, b=20),
-        showlegend=False
-    )
-    st.plotly_chart(fig_comp, use_container_width=True)
+        # Prévision médiane
+        last_hist_row = daily_hist.iloc[[-1]] if not daily_hist.empty else pd.DataFrame()
+        if not last_hist_row.empty:
+            rx = [last_hist_row["date"].iloc[0]] + list(fc_df["date"])
+            ry = [last_hist_row["solde_cumule"].iloc[0]] + list(fc_df["solde_prevu"])
+        else:
+            rx = list(fc_df["date"])
+            ry = list(fc_df["solde_prevu"])
 
-st.markdown("</div>", unsafe_allow_html=True)
+        fig_pred.add_trace(go.Scatter(
+            x=rx,
+            y=ry,
+            mode="lines+markers",
+            name="Prévision Solde IA (DH)",
+            line=dict(color="#A78BFA", width=3, dash="dash"),
+            marker=dict(size=4)
+        ))
+
+        fig_pred.add_hline(y=sec_thresh, line_dash="dot", line_color="#F59E0B", annotation_text=f"Seuil de sécurité ({format_dh(sec_thresh)})", annotation_font_color="#FBBF24")
+        fig_pred.add_hline(y=0, line_dash="solid", line_color="#EF4444", annotation_text="Découvert (0 DH)", annotation_font_color="#EF4444")
+
+        fig_pred.update_layout(
+            height=420,
+            margin=dict(l=20, r=20, t=25, b=20),
+            paper_bgcolor="#172A4D",
+            plot_bgcolor="#0B1630",
+            font=dict(color="#F1F5F9"),
+            xaxis=dict(gridcolor="#23385E"),
+            yaxis=dict(gridcolor="#23385E", ticksuffix=" DH"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_pred, use_container_width=True)
+
+        # Métriques d'évaluation réelles en DH
+        st.markdown("### 🎯 Métriques Réelles d'Évaluation (Test Set)")
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+
+        with col_m1:
+            mae_val = eval_metrics.get("mae")
+            st.metric("Erreur Absolue (MAE)", format_dh(mae_val) if mae_val is not None else "N/A", help="Écart moyen en Dirhams entre le flux réel et la prédiction.")
+        with col_m2:
+            rmse_val = eval_metrics.get("rmse")
+            st.metric("Erreur Quadratique (RMSE)", format_dh(rmse_val) if rmse_val is not None else "N/A", help="Pénalise les gros écarts inattendus en DH.")
+        with col_m3:
+            r2_val = eval_metrics.get("r2")
+            st.metric("Score de Détermination R²", f"{r2_val:.3f}" if r2_val is not None else "N/A", help="Part de la variance expliquée par le modèle.")
+        with col_m4:
+            st.metric("Échantillon Train / Test", f"{eval_metrics.get('train_size', 0)}j / {eval_metrics.get('test_size', 0)}j")
+
+        # Importance des variables
+        importance_dict = model_info.get("importance", {})
+        if importance_dict:
+            st.markdown("#### 🧠 Facteurs d'Influence Détectés par l'IA :")
+            trad_features = {
+                "day_of_week": "Jour de la semaine (rythme hebdo Maroc)",
+                "day_of_month": "Jour du mois (échéance TVA 20e, paie 28e, loyer 1er)",
+                "month": "Saisonnalité mensuelle",
+                "is_weekend": "Indicateur Samedi/Dimanche",
+                "dow_sin": "Composante cyclique hebdo (sin)",
+                "dow_cos": "Composante cyclique hebdo (cos)",
+                "dom_sin": "Composante cyclique mensuelle (sin)",
+                "dom_cos": "Composante cyclique mensuelle (cos)",
+                "lag_1": "Flux de la veille (J-1)",
+                "lag_2": "Flux à J-2",
+                "lag_7": "Flux du même jour semaine précédente (J-7)",
+                "rolling_mean_7": "Moyenne mobile 7 jours",
+                "rolling_std_7": "Volatilité des flux 7 jours"
+            }
+            imp_df = pd.DataFrame(list(importance_dict.items()), columns=["Variable", "Importance"]).sort_values(by="Importance", ascending=True)
+            imp_df["Variable"] = imp_df["Variable"].map(lambda x: trad_features.get(x, x))
+
+            fig_imp = px.bar(
+                imp_df,
+                x="Importance",
+                y="Variable",
+                orientation="h",
+                color="Importance",
+                color_continuous_scale="Blues"
+            )
+            fig_imp.update_layout(
+                height=320,
+                margin=dict(l=20, r=20, t=10, b=10),
+                paper_bgcolor="#172A4D",
+                plot_bgcolor="#0B1630",
+                font=dict(color="#F1F5F9"),
+                coloraxis_showscale=False
+            )
+            st.plotly_chart(fig_imp, use_container_width=True)
+
+        with st.expander("🔍 Tableau détaillé des prévisions journalières (MAD)"):
+            disp_fc = fc_df.copy()
+            disp_fc["Flux Prévu (DH)"] = disp_fc["flux_prevu"].apply(format_dh)
+            disp_fc["Solde Prévu (DH)"] = disp_fc["solde_prevu"].apply(format_dh)
+            disp_fc["Borne Inf (DH)"] = disp_fc["borne_inf"].apply(format_dh)
+            disp_fc["Borne Sup (DH)"] = disp_fc["borne_sup"].apply(format_dh)
+            st.dataframe(disp_fc[["date_str", "Flux Prévu (DH)", "Solde Prévu (DH)", "Borne Inf (DH)", "Borne Sup (DH)"]].rename(columns={"date_str": "Date"}), use_container_width=True)
+
 
 # ==============================================================================
-# 11. SECTION 5 : PRÉVISIONS IA & ANALYSE ET RECOMMANDATIONS (OBJECTIF 5)
+# PAGE 5 : ALERTES ET RECOMMANDATIONS (MAROC)
 # ==============================================================================
-st.markdown("""
-<div class="content-card">
-    <div class="card-title">Prévisions et recommandations</div>
-    <div class="card-subtitle">Analyse descriptive des tendances et modélisation prévisionnelle.</div>
-""", unsafe_allow_html=True)
-
-# Analyse du niveau d'historique disponible
-# Regroupement mensuel des opérations
-df_ops_mois = df_ops.copy()
-df_ops_mois['Mois_Annee'] = df_ops_mois['Date'].dt.to_period('M')
-nb_mois_historique = df_ops_mois['Mois_Annee'].nunique()
-
-tab_recom, tab_ia, tab_synthese = st.tabs([
-    "Analyse et recommandations",
-    "Modélisation Machine Learning",
-    "Synthèse de gestion financière"
-])
-
-# ------------------------------------------------------------------------------
-# ONGLET 1 : ANALYSE ET RECOMMANDATIONS (ACTIONS CONCRÈTES)
-# ------------------------------------------------------------------------------
-with tab_recom:
-    # 1. Vérification si passage sous zéro ou déficit
-    periode_decouvert = False
-    if solde_initial is not None:
-        min_solde = df_chronologique['Solde_Cumule_DH'].min()
-        if min_solde < 0:
-            periode_decouvert = True
-    else:
-        min_solde = None
-
-    # Ratio de couverture
-    decaissement_journalier = total_decaissements / max(1, (df_ops['Date'].max() - df_ops['Date'].min()).days) if total_decaissements > 0 else 0
-    if solde_final is not None and decaissement_journalier > 0 and solde_final > 0:
-        jours_couverture = round(solde_final / decaissement_journalier, 1)
-    else:
-        jours_couverture = 0.0
-
-    # Diagnostic de situation
-    if solde_final is not None and solde_final < 0:
-        # ALERTE ROUGE
-        deficit = abs(solde_final)
-        st.markdown(f"""
-        <div class="alert-card alert-danger">
-            <div class="alert-heading heading-red">Alerte Risque : Déficit de trésorerie avéré ({format_dh(solde_final)})</div>
-            <div class="alert-text">
-                Les décaissements totaux de la période ({format_dh(total_decaissements)}) excèdent la somme du solde initial 
-                et des encaissements enregistrés ({format_dh((solde_initial or 0) + total_encaissements)}). 
-                Le besoin de financement immédiat s'élève à <strong>{format_dh(deficit)}</strong>.
-            </div>
-            <div class="alert-actions-title">Actions correctives prioritaires :</div>
-            <ul class="alert-actions-list">
-                <li><strong>Mobilisation rapide des créances :</strong> Sollicitez l'escompte bancaire d'effets de commerce ou le recours à l'affacturage sur les factures clients en attente pour injecter des liquidités.</li>
-                <li><strong>Échelonnement négocié des dettes fournisseurs :</strong> Prenez contact avec vos fournisseurs stratégiques pour convenir d'un moratoire ou d'un calendrier d'étalement des règlements.</li>
-                <li><strong>Autorisation de découvert préventive :</strong> Sollicitez formellement auprès de votre agence bancaire une facilité de caisse temporaire d'au moins {format_dh(round(deficit * 1.2, -2))}.</li>
-                <li><strong>Gel des dépenses non indispensables :</strong> Stoppez immédiatement les engagements d'achats non opérationnels pour préserver le paiement des salaires et charges obligatoires.</li>
-            </ul>
-            <div class="alert-disclaimer">Aide à la décision : ces orientations constituent des recommandations prudentes de gestion financière.</div>
+elif menu_choice == "⚠️ Alertes & Recommandations":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">Alertes & Recommandations Managériales 🇲🇦</h1>
+            <p class="brand-subtitle">Détection précoce des tensions de liquidités et plans d'action adaptés au contexte économique marocain</p>
         </div>
+    """, unsafe_allow_html=True)
+
+    col_flt1, col_flt2 = st.columns([3, 1])
+    with col_flt1:
+        st.write("Analyse automatique combinant soldes réels, échéances de créances/dettes et prédictions du modèle.")
+    with col_flt2:
+        filter_grav = st.selectbox("Filtrer par gravité :", ["Toutes", "Critique", "Élevé", "Modéré", "Info"])
+
+    displayed_alerts = alerts_global
+    if filter_grav != "Toutes":
+        displayed_alerts = [a for a in displayed_alerts if a["gravite"] == filter_grav]
+
+    if not displayed_alerts:
+        st.success("✅ Aucune alerte correspondant aux critères de sélection.")
+    else:
+        for alert in displayed_alerts:
+            grav = alert["gravite"]
+            col_bar = alert["couleur"]
+            st.markdown(f"""
+                <div class="alert-card" style="border-left-color: {col_bar};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span class="alert-title">{alert['titre']}</span>
+                        <span style="background-color: {col_bar}25; color: {col_bar}; border: 1px solid {col_bar}50; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 11px;">
+                            {grav.upper()}
+                        </span>
+                    </div>
+                    <div style="font-size: 12px; color: #94A3B8; margin-bottom: 8px;">
+                        <strong>Échéance concernée :</strong> {alert['date']}
+                    </div>
+                    <div class="alert-body">
+                        <strong>Constat chiffré :</strong> {alert['raison']}
+                    </div>
+                    <div class="alert-recom">
+                        💡 <strong>Recommandation managériale :</strong> {alert['recommandation']}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 📋 Guide Pratique de Financement Court Terme au Maroc")
+    st.markdown("""
+    1. **Facilité de caisse / Découvert autorisé :** Négociation d'une autorisation auprès de votre banque marocaine (Attijariwafa, BCP, BOA, CIH, SGMB) pour couvrir les décalages de paie ou de TVA.
+    2. **Escompte d'effets de commerce (Traites) :** Mobilisation immédiate en liquidités des lettres de change tirées sur des clients grands comptes.
+    3. **Affacturage (Factoring marocain) :** Cession des factures clients avec garantie contre le risque d'impayé (ex: Maroc Factoring, Attijari Factoring).
+    4. **Déclarations fiscales DGI & Cotisations CNSS :** Respecter scrupuleusement le calendrier (TVA avant le 20, CNSS avant le 10) pour éviter les pénalités et majorations de retard.
+    """)
+
+
+# ==============================================================================
+# PAGE 6 : ANALYSE ET RAPPORTS
+# ==============================================================================
+elif menu_choice == "📈 Analyse & Rapports":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">Analyse Financière & Rapports Exécutifs (DH)</h1>
+            <p class="brand-subtitle">Position fiscale de TVA marocaine, ratios de gestion et édition de rapports PDF officiels</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # 4 Cartes de ratios financiers en DH
+    rc1, rc2, rc3, rc4 = st.columns(4)
+    with rc1:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">Dépense Journalière Moyenne</div>
+                <div class="kpi-value">{format_dh(adv_global.get('avg_daily_burn', 0))}</div>
+                <div class="kpi-sub">Burn Rate quotidien</div>
+            </div>
         """, unsafe_allow_html=True)
 
-    elif solde_final is not None and 0 <= solde_final <= st.session_state.seuil_securite:
-        # ALERTE ORANGE
-        ecart_seuil = st.session_state.seuil_securite - solde_final
+    with rc2:
+        runway_val = adv_global.get('runway_days', 0)
+        runway_color = "#22C55E" if runway_val >= 60 else ("#F59E0B" if runway_val >= 30 else "#EF4444")
         st.markdown(f"""
-        <div class="alert-card alert-vigilance">
-            <div class="alert-heading heading-orange">Vigilance : Trésorerie positive mais inférieure au seuil ({format_dh(solde_final)})</div>
-            <div class="alert-text">
-                Le solde final estimé reste positif mais inférieur à votre seuil de sécurité fixé à {format_dh(st.session_state.seuil_securite)} 
-                (écart de <strong>{format_dh(ecart_seuil)}</strong>). Votre autonomie financière ne représente qu'environ <strong>{jours_couverture} jours</strong> de décaissements moyens.
+            <div class="kpi-card">
+                <div class="kpi-label">Autonomie Financière</div>
+                <div class="kpi-value" style="color: {runway_color};">{runway_val} jours</div>
+                <div class="kpi-sub">Runway sans nouvelle recette</div>
             </div>
-            <div class="alert-actions-title">Actions préventives recommandées :</div>
-            <ul class="alert-actions-list">
-                <li><strong>Relance active des créances clients :</strong> Contactez les clients dont les factures approchent de leur échéance pour sécuriser les dates de règlement.</li>
-                <li><strong>Surveillance des délais de paiement (DSO) :</strong> Tout retard imprévu de règlement client ferait basculer le compte en découvert bancaire.</li>
-                <li><strong>Alignement du calendrier des règlements :</strong> Calez les sorties de fonds vers les fournisseurs après la réception effective des encaissements clients majeurs.</li>
-                <li><strong>Arbitrage sur les investissements :</strong> Reportez les achats de matériel ou prestations non prioritaires au mois prochain.</li>
-            </ul>
-            <div class="alert-disclaimer">Aide à la décision : ces orientations constituent des recommandations prudentes de gestion financière.</div>
-        </div>
         """, unsafe_allow_html=True)
 
-    elif solde_final is not None and solde_final > st.session_state.seuil_securite:
-        # SITUATION VERTE
-        marge = solde_final - st.session_state.seuil_securite
+    with rc3:
+        cov_val = adv_global.get('coverage_ratio', 1.0)
+        cov_color = "#22C55E" if cov_val >= 1.10 else ("#F59E0B" if cov_val >= 1.0 else "#EF4444")
         st.markdown(f"""
-        <div class="alert-card alert-favorable">
-            <div class="alert-heading heading-turquoise">Situation favorable : Excédent de trésorerie ({format_dh(solde_final)})</div>
-            <div class="alert-text">
-                Le solde final dépasse confortablement votre seuil de sécurité ({format_dh(st.session_state.seuil_securite)}) 
-                avec une réserve excédentaire de <strong>{format_dh(marge)}</strong>. 
-                L'autonomie financière couvre environ <strong>{jours_couverture} jours</strong> d'activité normale.
+            <div class="kpi-card">
+                <div class="kpi-label">Ratio de Couverture</div>
+                <div class="kpi-value" style="color: {cov_color};">{cov_val:.2f}</div>
+                <div class="kpi-sub">Recettes / Dépenses (cible > 1.10)</div>
             </div>
-            <div class="alert-actions-title">Opportunités d'optimisation financière :</div>
-            <ul class="alert-actions-list">
-                <li><strong>Placement des liquidités dormantes :</strong> Évaluez l'opportunité de placer une fraction des fonds excédentaires sur des supports sécurisés à court terme (Dépôts à terme ou OPCVM monétaires).</li>
-                <li><strong>Escomptes pour paiement comptant :</strong> Négociez avec vos fournisseurs clés un escompte commercial (1 % à 2 %) en échange d'un règlement anticipé.</li>
-                <li><strong>Poursuite de la rigueur de recouvrement :</strong> Conservez les procédures de relance préventive pour maintenir cette régularité de cash-flow.</li>
-            </ul>
-            <div class="alert-disclaimer">Aide à la décision : ces orientations constituent des recommandations prudentes de gestion financière.</div>
-        </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("Renseignez un solde initial pour générer l'analyse diagnostique complète de trésorerie.")
 
-# ------------------------------------------------------------------------------
-# ONGLET 2 : MODÉLISATION MACHINE LEARNING (RIDGE)
-# ------------------------------------------------------------------------------
-with tab_ia:
-    st.markdown("##### Prévisions algorithmiques par Machine Learning")
-    
-    # Vérification de l'adéquation de l'historique
-    if nb_mois_historique < 6:
-        st.warning(f"""
-        **Historique importé limité ({nb_mois_historique} mois d'activité détecté) :**  
-        Un modèle d'apprentissage automatique supervisé (Machine Learning) nécessite au minimum 
-        **6 à 12 mois de données continues** pour apprendre rigoureusement les tendances et la saisonnalité 
-        sans produire de résultats aléatoires ou trompeurs.
+    with rc4:
+        st.markdown(f"""
+            <div class="kpi-card">
+                <div class="kpi-label">TVA Nette Due à la DGI</div>
+                <div class="kpi-value" style="color: #F87171;">{format_dh(kpis_global.get('tva_due', 0))}</div>
+                <div class="kpi-sub">TVA Collectée - Déductible</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Répartition des charges et encaissements en DH
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        st.subheader("🔴 Top 5 des Postes de Décaissements (PCGE)")
+        cat_exp = adv_global.get("cat_expenses", pd.DataFrame())
+        if not cat_exp.empty:
+            cat_exp_disp = cat_exp.head(5).copy()
+            cat_exp_disp["Total (DH)"] = cat_exp_disp["montant"].apply(format_dh)
+            st.dataframe(
+                cat_exp_disp[["categorie", "Total (DH)", "pct"]].rename(columns={"categorie": "Catégorie PCGE", "pct": "Part (%)"}),
+                use_container_width=True
+            )
+        else:
+            st.info("Aucun décaissement enregistré.")
+
+    with col_t2:
+        st.subheader("🟢 Top des Postes d'Encaissements (PCGE)")
+        cat_inf = adv_global.get("cat_inflows", pd.DataFrame())
+        if not cat_inf.empty:
+            cat_inf_disp = cat_inf.copy()
+            cat_inf_disp["Total (DH)"] = cat_inf_disp["montant"].apply(format_dh)
+            st.dataframe(
+                cat_inf_disp[["categorie", "Total (DH)", "pct"]].rename(columns={"categorie": "Catégorie PCGE", "pct": "Part (%)"}),
+                use_container_width=True
+            )
+        else:
+            st.info("Aucun encaissement enregistré.")
+
+    st.markdown("---")
+    st.subheader("📄 Exportation du Rapport Exécutif & Données")
+    st.write("Générez les documents officiels pour votre direction financière, votre banquier ou votre soutenance :")
+
+    col_exp1, col_exp2 = st.columns(2)
+
+    with col_exp1:
+        st.markdown("#### 📑 Rapport Exécutif PDF Officiel (DH)")
+        st.caption("Synthèse financière certifiée SmartCash AI Maroc : KPIs en DH, TVA DGI, BFR et diagnostic IA.")
         
-        Pour préserver la fiabilité financière, SmartCash AI vous propose ci-dessous une projection analytique basée sur vos flux moyens réels, ou vous permet de tester le modèle complet sur les 24 mois de données d'entreprise disponibles.
-        """)
-        
-        # Projection analytique prudente basée sur les moyennes constatées
-        moy_enc_jour = total_encaissements / max(1, (df_ops['Date'].max() - df_ops['Date'].min()).days)
-        moy_dec_jour = total_decaissements / max(1, (df_ops['Date'].max() - df_ops['Date'].min()).days)
-        
-        st.markdown("**Projection analytique des 3 prochains mois (Basée sur le rythme réel constaté) :**")
-        proj_data = []
-        solde_proj = solde_final if solde_final is not None else 50000.0
-        
-        for m in range(1, 4):
-            enc_m = round(moy_enc_jour * 30, 2)
-            dec_m = round(moy_dec_jour * 30, 2)
-            net_m = round(enc_m - dec_m, 2)
-            solde_fin_m = round(solde_proj + net_m, 2)
-            
-            proj_data.append({
-                "Mois": f"Mois +{m}",
-                "Solde début (DH)": format_dh(solde_proj),
-                "Encaissements estimés (DH)": format_dh(enc_m),
-                "Décaissements estimés (DH)": format_dh(dec_m),
-                "Flux net estimé (DH)": format_dh(net_m),
-                "Solde fin estimé (DH)": format_dh(solde_fin_m)
-            })
-            solde_proj = solde_fin_m
-            
-        st.table(pd.DataFrame(proj_data))
-        
-    else:
-        # Entraînement du modèle réel sur données agrégées
-        df_hist_24 = charger_ou_generer_donnees()
-        modele_ml = ModelePrevisionTresorerie()
-        metrics = modele_ml.entrainer(df_hist_24)
-        projections_df = modele_ml.prevoir_mois_suivants(nb_mois=3, solde_initial_depart=(solde_final if solde_final is not None else 50000.0))
-        
-        c_m1, c_m2, c_m3 = st.columns(3)
-        with c_m1:
-            st.metric("Score de fiabilité R²", f"{metrics['r2_global']:.2%}")
-        with c_m2:
-            st.metric("Erreur moyenne Encaissements", format_dh(metrics['mae_encaissements_dh']))
-        with c_m3:
-            st.metric("Erreur moyenne Décaissements", format_dh(metrics['mae_decaissements_dh']))
-            
-        st.dataframe(
-            projections_df[[
-                'Libelle_Mois', 'Solde_Initial_DH', 'Total_Encaissements_Prevu_DH',
-                'Total_Decaissements_Prevu_DH', 'Flux_Net_Prevu_DH', 'Solde_Final_Prevu_DH'
-            ]].style.format({
-                'Solde_Initial_DH': lambda x: format_dh(x),
-                'Total_Encaissements_Prevu_DH': lambda x: format_dh(x),
-                'Total_Decaissements_Prevu_DH': lambda x: format_dh(x),
-                'Flux_Net_Prevu_DH': lambda x: format_dh(x),
-                'Solde_Final_Prevu_DH': lambda x: format_dh(x)
-            }),
+        try:
+            pdf_bytes = rg.generate_pdf_report(
+                kpis=kpis_global,
+                adv=adv_global,
+                alerts=alerts_global,
+                forecast_data=forecast_obj
+            )
+            st.download_button(
+                label="📥 Télécharger le Rapport PDF en Dirhams",
+                data=pdf_bytes,
+                file_name=f"Rapport_SmartCash_AI_Maroc_{today_maroc.strftime('%Y%m%d')}.pdf",
+                mime="application/pdf",
+                type="primary",
+                use_container_width=True
+            )
+        except Exception as e:
+            st.error(f"Erreur lors de la génération du PDF : {e}")
+
+    with col_exp2:
+        st.markdown("#### 📊 Exportation des Données au Format CSV")
+        st.caption("Grand livre complet incluant HT, taux de TVA, TVA, TTC, échéances et partenaires.")
+        csv_data = df_current.to_csv(index=False, encoding="utf-8-sig")
+        st.download_button(
+            label="📥 Télécharger les Données en CSV",
+            data=csv_data,
+            file_name=f"Transactions_SmartCash_Maroc_{today_maroc.strftime('%Y%m%d')}.csv",
+            mime="text/csv",
             use_container_width=True
         )
 
-# ------------------------------------------------------------------------------
-# ONGLET 3 : SYNTHÈSE DE GESTION FINANCIÈRE
-# ------------------------------------------------------------------------------
-with tab_synthese:
-    st.markdown("##### Synthèse académique et ratios de trésorerie")
-    col_syn1, col_syn2 = st.columns(2)
-    with col_syn1:
-        st.markdown("""
-        **L'équation fondamentale de trésorerie :**
-        $$\\text{Solde Final} = \\text{Solde Initial} + \\text{Encaissements} - \\text{Décaissements}$$
-        - Les flux sont enregistrés en **comptabilité de trésorerie** (mouvements effectifs en banque/caisse).
-        - La trésorerie nette correspond à l'arbitrage entre le **Fonds de Roulement (FRNG)** et le **Besoin en Fonds de Roulement (BFR)**.
-        """)
-    with col_syn2:
-        st.markdown("""
-        **Indicateurs de gestion du cycle d'exploitation :**
-        - **DSO (Days Sales Outstanding) :** Délai moyen de recouvrement des clients. Au Maroc, la loi sur les délais de paiement fixe des sanctions en cas de dépassement des 60 à 90 jours.
-        - **DPO (Days Payable Outstanding) :** Délai moyen de règlement consenti par vos fournisseurs.
-        """)
-
-st.markdown("</div>", unsafe_allow_html=True)
 
 # ==============================================================================
-# 12. PIED DE PAGE
+# PAGE 7 : COMPRENDRE L'IA (MODULE PÉDAGOGIQUE)
 # ==============================================================================
-st.markdown("""
-<div class="footer-bar">
-    SmartCash AI &bull; Application de gestion et prévision de trésorerie d'entreprise &bull; Casablanca, Maroc &bull; Devise : DH
-</div>
-""", unsafe_allow_html=True)
+elif menu_choice == "🧠 Comprendre l'IA (Module)":
+    st.markdown("""
+        <div class="brand-header">
+            <h1 class="brand-title">Approche Pédagogique : L'IA en Gestion Financière</h1>
+            <p class="brand-subtitle">Support académique pour le module Intelligence Artificielle & Soutenance d'examen</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    tab_p1, tab_p2, tab_p3, tab_p4, tab_p5 = st.tabs([
+        "1. Automatisation vs IA",
+        "2. Fonctionnement du Machine Learning",
+        "3. Machine Learning vs Deep Learning",
+        "4. Feature Engineering Financier",
+        "🎤 Guide de Soutenance (5 min)"
+    ])
+
+    with tab_p1:
+        st.markdown("""
+        ### 🔄 Différence fondamentale : Automatisation classique vs Intelligence Artificielle
+
+        Dans un logiciel comptable ou un tableur Excel, les opérations reposent sur des **règles rigides programmées manuellement** :
+        - *« SI le solde < 0 ALORS afficher Alerte »*
+        - *« Solde fin de mois = Solde début + Somme des flux prévus »*
+
+        #### Pourquoi l'automatisation classique a ses limites en trésorerie ?
+        L'entreprise vit dans un écosystème dynamique où les clients ne paient pas tous au même rythme, où l'activité présente des creux le week-end, et où certaines charges se reproduisent selon des motifs périodiques subtils (ex: échéances fiscales du 20 au Maroc, salaires du 28).
+
+        #### L'apport de l'Intelligence Artificielle (Machine Learning) :
+        Au lieu de coder manuellement chaque règle, nous fournissons à l'algorithme un **historique d'opérations financières en DH**. Le modèle détecte lui-même les tendances cachées, les saisonnalités calendaires et les corrélations temporelles pour estimer le flux net journalier futur.
+        """)
+
+        st.markdown("""
+        | Critère | Automatisation Classique (Règles) | Intelligence Artificielle (Machine Learning) |
+        | :--- | :--- | :--- |
+        | **Origine de la logique** | Conçue manuellement par un développeur | Apprise automatiquement à partir des données passées |
+        | **Capacité d'adaptation** | Rigide, plante si un cas imprévu survient | Flexible, s'adapte lorsque de nouvelles données arrivent |
+        | **Rôle dans SmartCash AI** | Calcul exact du solde cumulé, seuils d'alerte, TVA | Modélisation statistique du flux net quotidien futur |
+        """)
+
+    with tab_p2:
+        st.markdown("""
+        ### 🤖 Le Fonctionnement Général du Machine Learning Supervisé
+
+        Dans **SmartCash AI**, la prévision de trésorerie est modélisée comme un problème de **Régression Supervisée** :
+
+        1. **La variable cible ($y$) :** Le flux financier net journalier en Dirhams ($\text{Encaissements} - \text{Décaissements}$).
+        2. **La matrice des variables explicatives ($X$) :** Les caractéristiques temporelles créées par nos soins (Feature Engineering).
+        3. **L'apprentissage (Entraînement) :** L'algorithme (*Random Forest* ou *Ridge*) ajuste ses paramètres internes afin de minimiser l'écart entre sa prédiction et la réalité historique.
+        4. **L'évaluation sans triche (Test Set) :** Le modèle est évalué sur les 14 derniers jours d'historique qu'il n'a jamais vus pendant son entraînement. On mesure ainsi des métriques réelles en DH :
+           - **MAE (Mean Absolute Error) :** Erreur moyenne absolue en Dirhams.
+           - **RMSE :** Sensibilité aux gros écarts inattendus.
+           - **R² :** Capacité d'explication de la variance.
+        """)
+
+    with tab_p3:
+        st.markdown("""
+        ### ⚖️ Machine Learning vs Deep Learning : Pourquoi ce choix rigoureux ?
+
+        > **Règle d'honnêteté scientifique :** SmartCash AI utilise des modèles de **Machine Learning tabulaire** (Scikit-learn), et **non du Deep Learning**.
+
+        #### Quand utiliser le Machine Learning (Random Forest, Ridge) ?
+        - Idéal pour les données tabulaires de gestion de PME.
+        - Fonctionne parfaitement même avec un volume modéré de données (quelques mois à quelques années).
+        - Rapide à entraîner, explicable et robuste face au surapprentissage (*overfitting*).
+
+        #### Quand le Deep Learning (LSTM, Transformers) est-il justifié ?
+        - Lorsque l'on dispose de centaines de milliers de transactions à haute fréquence (trading de banque d'investissement, big data retail).
+        - Pour des flux de données non structurés (vision par ordinateur, traitement du langage naturel, audio).
+        - **Inconvénient en trésorerie de PME :** Nécessite des volumes massifs de données, agit comme une "boîte noire" difficile à auditer pour un expert-comptable, et risque d'overfitter sévèrement sur un historique restreint.
+        """)
+
+    with tab_p4:
+        st.markdown("""
+        ### 🛠️ L'Art du Feature Engineering Financier Adapté au Maroc
+
+        En finance, donner une date brute (`2026-10-30`) à un algorithme ne sert à rien. Il faut convertir le temps en variables mathématiques porteuses de sens :
+
+        1. **Encodage cyclique des jours de la semaine :**
+           $$\text{dow\_sin} = \sin\left(\frac{2\pi \times \text{jour}}{7}\right), \quad \text{dow\_cos} = \cos\left(\frac{2\pi \times \text{jour}}{7}\right)$$
+        2. **Échéances comptables marocaines clés :**
+           Le 1er du mois (loyers), le 10 (déclarations CNSS/AMO), le 20 (déclaration TVA DGI), le 28 (salaires).
+        3. **Variables décalées (Lags) :**
+           Le flux à $J-1$, $J-2$ et surtout à $J-7$ (rappel du même jour de la semaine précédente).
+        4. **Statistiques glissantes :**
+           La moyenne et la volatilité sur 7 jours pour donner le contexte récent.
+        5. **Prise en compte des opérations planifiées :**
+           Les charges fixes futures déjà connues sont fusionnées avec la prédiction statistique.
+        """)
+
+    with tab_p5:
+        st.markdown("""
+        ### 🎤 Script recommandé pour votre Soutenance Orale (5 minutes chrono)
+
+        Voici la trame idéale pour captiver votre professeur et vos camarades lors de la démonstration :
+
+        - **Minute 1 — Contexte et Problématique financière marocaine :**
+          *« Bonjour. La trésorerie est le nerf de la guerre des entreprises marocaines. Avec des délais de paiement inter-entreprises parfois longs, anticiper les tensions de liquidités est vital. SmartCash AI combine la rigueur comptable du PCGE marocain et le Machine Learning pour anticiper ces ruptures. »*
+
+        - **Minute 2 — Tableau de bord & KPIs en Dirhams :**
+          *(Montrez la page Tableau de bord)*  
+          *« Dès l'ouverture, le dirigeant visualise son solde actuel en DH, son solde prévisionnel, ses créances clients, ses dettes fournisseurs et son niveau de risque calculé en temps réel. »*
+
+        - **Minute 3 — Démonstration de l'IA et de l'Évaluation :**
+          *(Allez sur la page Prévision IA)*  
+          *« Nous avons entraîné un algorithme de Random Forest via Scikit-learn. Le modèle intègre les cycles hebdomadaires et les échéances fiscales marocaines. Les performances sont mesurées sur un échantillon test réel avec la MAE en DH et le R². »*
+
+        - **Minute 4 — Alertes managériales & Gestion du BFR :**
+          *(Allez sur Alertes & Recommandations puis Opérations)*  
+          *« L'IA détecte à l'avance les tensions et propose des solutions concrètes : mobilisation d'effets de commerce, recours à la facilité de caisse bancaire ou relance des créances échues. »*
+
+        - **Minute 5 — Export officiel & Conclusion :**
+          *(Allez sur Analyse & Rapports, téléchargez le PDF en DH)*  
+          *« En un clic, nous générons un rapport PDF officiel certifié en Dirhams pour le banquier ou le conseil d'administration. Je vous remercie et réponds à vos questions. »*
+        """)
