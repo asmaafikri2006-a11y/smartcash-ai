@@ -1,0 +1,5 @@
+﻿Date,Date Échéance,Libellé,Type,Catégorie,Partenaire,Montant HT,Taux TVA (%),Montant TVA,Montant TTC (DH),Statut,Statut Paiement,Commentaire
+2026-10-25,2026-11-24,Facture client OCP Solutions #FC-2026-081,Encaissement,Ventes de marchandises au Maroc (Cte 7111),Groupe OCP,45000.0,20.0,9000.0,54000.0,Réalisé,Payé,Règlement reçu par virement bancaire
+2026-10-28,2026-11-27,Facture SNTL Logistique & Fret #FF-592,Décaissement,Transports de marchandises & Déplacements (Cte 6142/6143),SNTL Transport,8500.0,14.0,1190.0,9690.0,Réalisé,Payé,Frais de transport inter-villes Maroc
+2026-11-09,2026-11-09,Loyer commercial siège Casablanca,Décaissement,Loyers commerciaux & Charges locatives (Cte 6131),Bailleur Anfa,18500.0,0.0,0.0,18500.0,Prévu,En attente,Chèque de loyer à émettre
+2026-11-14,2026-11-14,Facture client Marjane Holding #FC-2026-094,Encaissement,Ventes de marchandises au Maroc (Cte 7111),Marjane Holding,72000.0,20.0,14400.0,86400.0,Prévu,En attente,Encaissement traite bancaire prévu
