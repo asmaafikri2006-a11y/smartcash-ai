@@ -155,16 +155,16 @@ def compute_kpis(df: pd.DataFrame, initial_balance: float = 120000.0, forecast_d
 
     if min_future_balance < 0:
         niveau_risque = "Critique"
-        risque_couleur = "#EF4444"  # Rouge
+        risque_couleur = "#DC2626"  # Rouge
     elif min_future_balance < 25000:
         niveau_risque = "Élevé"
-        risque_couleur = "#F97316"  # Orange vif
+        risque_couleur = "#EA580C"  # Orange vif
     elif min_future_balance < 60000 or (dettes_fournisseurs > (creances_clients + solde_actuel)):
         niveau_risque = "Modéré"
-        risque_couleur = "#F59E0B"  # Ambre
+        risque_couleur = "#D97706"  # Ambre / Orange
     else:
         niveau_risque = "Faible"
-        risque_couleur = "#22C55E"  # Vert
+        risque_couleur = "#15803D"  # Vert
 
     return {
         "solde_actuel": round(solde_actuel, 2),
@@ -261,7 +261,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
             val_fmt = format_dh(first_neg['solde_prevu'])
             alerts.append({
                 "gravite": "Critique",
-                "couleur": "#EF4444",
+                "couleur": "#DC2626",
                 "titre": "Risque imminent de découvert bancaire",
                 "date": first_neg["date_str"],
                 "raison": f"Le solde de trésorerie prévisionnel devient négatif ({val_fmt}) dès le {first_neg['date_str']}.",
@@ -273,7 +273,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
             seuil_fmt = format_dh(security_threshold)
             alerts.append({
                 "gravite": "Élevé",
-                "couleur": "#F97316",
+                "couleur": "#EA580C",
                 "titre": "Passage sous le matelas de sécurité marocain",
                 "date": first_warn["date_str"],
                 "raison": f"Le solde prévisionnel atteint {val_fmt} le {first_warn['date_str']}, inférieur au seuil de précaution fixé à {seuil_fmt}.",
@@ -285,7 +285,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
         cr_fmt = format_dh(kpis["creances_echues"])
         alerts.append({
             "gravite": "Élevé",
-            "couleur": "#F97316",
+            "couleur": "#EA580C",
             "titre": "Retard de recouvrement des créances clients",
             "date": "Échéances dépassées",
             "raison": f"Un volume total de {cr_fmt} de factures clients est actuellement échu sans confirmation d'encaissement.",
@@ -297,7 +297,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
         deficit_fmt = format_dh(kpis["total_decaissements"] - kpis["total_encaissements"])
         alerts.append({
             "gravite": "Modéré",
-            "couleur": "#F59E0B",
+            "couleur": "#D97706",
             "titre": "Déficit d'exploitation sur la période",
             "date": "Période active",
             "raison": f"Les décaissements globaux dépassent les encaissements d'un montant net de {deficit_fmt}.",
@@ -315,7 +315,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
             moy_fmt = format_dh(mean_dec)
             alerts.append({
                 "gravite": "Modéré",
-                "couleur": "#3B82F6",
+                "couleur": "#2563EB",
                 "titre": "Décaissement exceptionnel détecté",
                 "date": row["date"],
                 "raison": f"Opération '{row['libelle']}' d'un montant de {m_fmt} très supérieur à la moyenne des charges ({moy_fmt}).",
@@ -327,7 +327,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
     if runway < 30 and kpis["solde_actuel"] > 0:
         alerts.append({
             "gravite": "Élevé",
-            "couleur": "#F97316",
+            "couleur": "#EA580C",
             "titre": "Autonomie de trésorerie sous tension",
             "date": "Court terme (< 30 jours)",
             "raison": f"Les liquidités actuelles permettent de couvrir seulement {runway} jours de charges opérationnelles au rythme moyen.",
@@ -338,7 +338,7 @@ def detect_alerts_and_recommendations(df: pd.DataFrame, initial_balance: float =
     if not alerts:
         alerts.append({
             "gravite": "Info",
-            "couleur": "#22C55E",
+            "couleur": "#15803D",
             "titre": "Trésorerie équilibrée et pérenne",
             "date": "Situation actuelle",
             "raison": f"Les encaissements couvrent confortablement les décaissements (ratio de couverture : {adv.get('coverage_ratio', 1.0):.2f}) et aucun découvert n'est anticipé.",

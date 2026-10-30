@@ -1,7 +1,7 @@
 """
 SmartCash AI - Application Intelligente de Gestion et Prévision de Trésorerie (Maroc 🇲🇦)
 Fichier principal : app.py
-Thème : Bleu Marine Sombre (#0B1630, #101F3D, #172A4D)
+Thème : Interface Professionnelle Financière (Fond Blanc #FFFFFF, Barre Latérale Marine #142D4E)
 Devise : Dirham Marocain (MAD / DH) - Fuseau horaire : Africa/Casablanca
 """
 
@@ -32,43 +32,302 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# STYLES CSS PERSONNALISÉS (DESIGN BLEU MARINE FONCÉ)
+# STYLES CSS PROFESSIONNELS (PALETTE BLANCHE INTÉGRALE)
 # ---------------------------------------------------------
-DARK_NAVY_CSS = """
+APP_CSS = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        color: #F1F5F9;
     }
 
-    /* Arrière-plan global bleu marine foncé */
+    /* Arrière-plan global blanc #FFFFFF */
     .stApp {
-        background-color: #0B1630 !important;
+        background-color: #FFFFFF !important;
     }
 
     .main .block-container {
         padding-top: 1.5rem;
         padding-bottom: 3rem;
         max-width: 1350px;
+        background-color: #FFFFFF !important;
     }
 
-    /* Barre latérale */
+    /* Lisibilité optimale des textes sur fond blanc */
+    .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
+        color: #1F2937 !important;
+        font-weight: 700;
+    }
+
+    .main p, .main .stMarkdown p, .main .stMarkdown li {
+        color: #1F2937;
+        font-size: 14.5px;
+        line-height: 1.6;
+    }
+
+    .main label, .main [data-testid="stWidgetLabel"] p {
+        color: #1F2937 !important;
+        font-weight: 600 !important;
+        font-size: 13.5px !important;
+    }
+
+    .main .stCaption, .main .stCaption p {
+        color: #64748B !important;
+        font-size: 12.5px !important;
+    }
+
+    /* Métriques Streamlit sur fond blanc */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
+        padding: 14px 18px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+    }
+    div[data-testid="stMetricLabel"] p {
+        color: #64748B !important;
+        font-weight: 600 !important;
+        font-size: 12px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #1F2937 !important;
+        font-weight: 800 !important;
+        font-size: 22px !important;
+    }
+
+    /* Expander moderne */
+    div[data-testid="stExpander"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+    }
+    div[data-testid="stExpander"] summary span {
+        color: #1F2937 !important;
+        font-weight: 600 !important;
+    }
+
+    /* ========================================================= */
+    /* CHAMPS DE SAISIE, FORMULAIRES, DATES, SELECTBOX (BLANC)   */
+    /* ========================================================= */
+    div[data-baseweb="input"],
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="base-input"],
+    div[data-baseweb="textarea"],
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div,
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stNumberInput"] input,
+    div[data-testid="stDateInput"] input,
+    div[data-testid="stTextArea"] textarea {
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+        border-color: #D1D5DB !important;
+        border-radius: 8px !important;
+        -webkit-text-fill-color: #1F2937 !important;
+        font-size: 14px !important;
+    }
+
+    /* Placeholders en gris lisible */
+    input::placeholder, textarea::placeholder {
+        color: #9CA3AF !important;
+        -webkit-text-fill-color: #9CA3AF !important;
+    }
+
+    /* Indicateur de focus actif bleu #2563EB */
+    div[data-baseweb="input"]:focus-within,
+    div[data-baseweb="select"]:focus-within,
+    div[data-baseweb="textarea"]:focus-within,
+    div[data-testid="stTextInput"] input:focus,
+    div[data-testid="stNumberInput"] input:focus {
+        border-color: #2563EB !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+    }
+
+    /* Menus déroulants (Options de listes déroulantes) */
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"],
+    ul[data-baseweb="menu"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 8px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    li[data-baseweb="menu-item"] {
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+        font-size: 13.5px !important;
+    }
+
+    li[data-baseweb="menu-item"]:hover {
+        background-color: #F3F6FA !important;
+        color: #2563EB !important;
+    }
+
+    div[data-baseweb="select"] span {
+        color: #1F2937 !important;
+        -webkit-text-fill-color: #1F2937 !important;
+    }
+
+    /* Contrôles numériques (+ et -) */
+    div[data-testid="stNumberInput"] button {
+        background-color: #F3F6FA !important;
+        color: #1F2937 !important;
+        border: 1px solid #D1D5DB !important;
+    }
+    div[data-testid="stNumberInput"] button:hover {
+        background-color: #E5E7EB !important;
+        color: #2563EB !important;
+    }
+
+    /* Boutons Radio & Checkboxes */
+    div[data-testid="stRadio"] label p {
+        color: #1F2937 !important;
+        font-weight: 500 !important;
+    }
+
+    /* Boutons Streamlit */
+    button[kind="primary"] {
+        background-color: #2563EB !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #1D4ED8 !important;
+    }
+
+    button[kind="secondary"] {
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+    button[kind="secondary"]:hover {
+        background-color: #F3F6FA !important;
+        border-color: #9CA3AF !important;
+        color: #2563EB !important;
+    }
+
+    /* Dataframe et tableaux */
+    div[data-testid="stDataFrame"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    /* ========================================================= */
+    /* BARRE LATÉRALE BLANCHE                                    */
+    /* ========================================================= */
     section[data-testid="stSidebar"] {
-        background-color: #101F3D !important;
-        border-right: 1px solid #1E3A5F;
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E5E7EB;
     }
 
+    /* Tous les divs enfants de la barre latérale en blanc */
+    section[data-testid="stSidebar"] > div,
+    section[data-testid="stSidebar"] > div > div,
+    section[data-testid="stSidebar"] > div > div > div {
+        background-color: #FFFFFF !important;
+    }
+
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] h4 {
+        color: #1F2937 !important;
+    }
+
+    section[data-testid="stSidebar"] label, 
+    section[data-testid="stSidebar"] label p, 
+    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+        color: #1F2937 !important;
+        font-weight: 600 !important;
+    }
+
+    section[data-testid="stSidebar"] .stCaption,
+    section[data-testid="stSidebar"] .stCaption p {
+        color: #64748B !important;
+    }
+
+    /* Séparateur hr dans la barre latérale */
+    section[data-testid="stSidebar"] hr {
+        border-color: #E5E7EB !important;
+    }
+
+    /* Radio navigation dans la barre latérale */
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+        gap: 3px;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label {
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 9px 14px;
+        transition: all 0.15s ease;
+        margin-bottom: 1px;
+        border-left: 3px solid transparent;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {
+        background-color: #F0F5FF !important;
+        border-left: 3px solid #93C5FD !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) {
+        background-color: #EFF6FF !important;
+        border-left: 3px solid #2563EB !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label span,
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label p {
+        color: #374151 !important;
+        font-weight: 500 !important;
+        font-size: 13.5px !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) span,
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) p {
+        color: #1D4ED8 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Inputs dans la barre latérale : fond blanc avec bordure */
+    section[data-testid="stSidebar"] div[data-baseweb="input"],
+    section[data-testid="stSidebar"] div[data-baseweb="input"] input {
+        background-color: #FFFFFF !important;
+        color: #1F2937 !important;
+        -webkit-text-fill-color: #1F2937 !important;
+        border: 1px solid #D1D5DB !important;
+    }
+
+    section[data-testid="stSidebar"] div[data-testid="stPopover"] button {
+        background-color: #2563EB !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
+    }
+    section[data-testid="stSidebar"] div[data-testid="stPopover"] button:hover {
+        background-color: #1D4ED8 !important;
+    }
+
+    /* ========================================================= */
+    /* CARTES & COMPOSANTS VISUELS BLANCS                        */
+    /* ========================================================= */
     /* En-tête de marque */
     .brand-header {
-        background: linear-gradient(135deg, #101F3D 0%, #172A4D 50%, #1E3A8A 100%);
-        border: 1px solid #23385E;
+        background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #3B82F6 100%);
+        border: none;
         padding: 22px 28px;
         border-radius: 12px;
-        color: #F1F5F9;
+        color: #FFFFFF;
         margin-bottom: 22px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
     }
     
     .brand-title {
@@ -76,31 +335,32 @@ DARK_NAVY_CSS = """
         font-weight: 800;
         margin: 0;
         letter-spacing: -0.5px;
-        color: #FFFFFF;
+        color: #FFFFFF !important;
     }
     
     .brand-subtitle {
-        font-size: 14.5px;
+        font-size: 14px;
         font-weight: 400;
-        color: #93C5FD;
+        color: #BFDBFE !important;
         margin-top: 4px;
         margin-bottom: 0;
     }
 
-    /* Cartes KPI bleu marine */
+    /* Cartes KPI blanches */
     .kpi-card {
-        background-color: #172A4D;
-        border: 1px solid #23385E;
-        border-radius: 10px;
-        padding: 16px 18px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-        transition: transform 0.15s ease, border-color 0.15s ease;
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
+        border-radius: 12px;
+        padding: 18px 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
         height: 100%;
     }
     
     .kpi-card:hover {
         transform: translateY(-2px);
-        border-color: #3B82F6;
+        box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08);
+        border-color: #CBD5E1 !important;
     }
 
     .kpi-label {
@@ -108,29 +368,29 @@ DARK_NAVY_CSS = """
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.6px;
-        color: #B7C5DA;
-        margin-bottom: 5px;
+        color: #64748B !important;
+        margin-bottom: 6px;
     }
 
     .kpi-value {
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 800;
-        color: #FFFFFF;
+        color: #1F2937;
         line-height: 1.25;
     }
 
     .kpi-sub {
-        font-size: 11.5px;
-        margin-top: 5px;
+        font-size: 12px;
+        margin-top: 6px;
         font-weight: 500;
-        color: #94A3B8;
+        color: #64748B !important;
     }
 
     /* Badges financiers */
     .badge-inflow {
-        color: #22C55E;
-        background-color: rgba(34, 197, 94, 0.15);
-        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #15803D !important;
+        background-color: #DCFCE7 !important;
+        border: 1px solid #BBF7D0 !important;
         padding: 3px 8px;
         border-radius: 6px;
         font-weight: 700;
@@ -139,9 +399,9 @@ DARK_NAVY_CSS = """
     }
 
     .badge-outflow {
-        color: #EF4444;
-        background-color: rgba(239, 68, 68, 0.15);
-        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #DC2626 !important;
+        background-color: #FEE2E2 !important;
+        border: 1px solid #FECACA !important;
         padding: 3px 8px;
         border-radius: 6px;
         font-weight: 700;
@@ -150,8 +410,9 @@ DARK_NAVY_CSS = """
     }
 
     .badge-late {
-        color: #EF4444;
-        background-color: rgba(239, 68, 68, 0.2);
+        color: #DC2626 !important;
+        background-color: #FEE2E2 !important;
+        border: 1px solid #FECACA !important;
         padding: 2px 7px;
         border-radius: 4px;
         font-size: 11px;
@@ -159,8 +420,9 @@ DARK_NAVY_CSS = """
     }
 
     .badge-pending {
-        color: #F59E0B;
-        background-color: rgba(245, 158, 11, 0.2);
+        color: #D97706 !important;
+        background-color: #FEF3C7 !important;
+        border: 1px solid #FDE68A !important;
         padding: 2px 7px;
         border-radius: 4px;
         font-size: 11px;
@@ -168,99 +430,92 @@ DARK_NAVY_CSS = """
     }
 
     .badge-paid {
-        color: #22C55E;
-        background-color: rgba(34, 197, 94, 0.2);
+        color: #15803D !important;
+        background-color: #DCFCE7 !important;
+        border: 1px solid #BBF7D0 !important;
         padding: 2px 7px;
         border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
     }
 
-    /* Cartes d'alertes */
+    /* Cartes d'alertes blanches */
     .alert-card {
         border-left: 5px solid;
-        background-color: #172A4D;
-        border-top: 1px solid #23385E;
-        border-right: 1px solid #23385E;
-        border-bottom: 1px solid #23385E;
+        background-color: #FFFFFF !important;
+        border-top: 1px solid #E5E7EB;
+        border-right: 1px solid #E5E7EB;
+        border-bottom: 1px solid #E5E7EB;
         border-radius: 8px;
         padding: 16px 20px;
         margin-bottom: 14px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
     .alert-title {
         font-size: 16px;
         font-weight: 700;
-        color: #F1F5F9;
+        color: #1F2937 !important;
         margin-bottom: 4px;
     }
 
     .alert-body {
         font-size: 13.5px;
-        color: #CBD5E1;
-        margin-bottom: 6px;
+        color: #4B5563 !important;
+        margin-bottom: 8px;
     }
 
     .alert-recom {
         font-size: 13px;
-        color: #93C5FD;
-        background-color: rgba(30, 58, 138, 0.35);
-        border: 1px solid rgba(59, 130, 246, 0.3);
-        padding: 8px 12px;
+        color: #1E40AF !important;
+        background-color: #EFF6FF !important;
+        border: 1px solid #BFDBFE !important;
+        padding: 10px 14px;
         border-radius: 6px;
         font-weight: 500;
     }
 
-    /* Boîte d'information et conteneurs */
+    /* Badge Maroc dans la barre latérale (bleu sur blanc) */
     .morocco-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background-color: rgba(30, 58, 138, 0.4);
-        border: 1px solid #2563EB;
+        background-color: #EFF6FF;
+        border: 1px solid #BFDBFE;
         padding: 4px 10px;
         border-radius: 6px;
         font-size: 12px;
-        color: #BFDBFE;
+        color: #1D4ED8;
         font-weight: 600;
     }
 
-    /* Style des formulaires et onglets */
+    /* Onglets de navigation dans les pages */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 1px solid #23385E;
+        gap: 6px;
+        background-color: #F3F6FA;
+        padding: 4px;
+        border-radius: 10px;
+        border: 1px solid #E5E7EB;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #101F3D;
-        border: 1px solid #23385E;
-        border-radius: 8px 8px 0 0;
-        color: #B7C5DA;
+        background-color: transparent;
+        border: none;
+        border-radius: 6px;
+        color: #64748B;
         padding: 8px 16px;
         font-weight: 600;
+        font-size: 13.5px;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #172A4D !important;
-        border-color: #3B82F6 !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Dataframe et tableaux */
-    div[data-testid="stDataFrame"] {
-        border: 1px solid #23385E;
-        border-radius: 8px;
-        background-color: #101F3D;
-    }
-
-    /* Inputs et Selects */
-    div[data-baseweb="input"], div[data-baseweb="select"] > div {
-        background-color: #172A4D !important;
-        border-color: #23385E !important;
-        color: #F1F5F9 !important;
+        background-color: #FFFFFF !important;
+        border: 1px solid #E5E7EB !important;
+        color: #2563EB !important;
+        font-weight: 700 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 </style>
 """
-st.markdown(DARK_NAVY_CSS, unsafe_allow_html=True)
+st.markdown(APP_CSS, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # INITIALISATION ET CHARGEMENT DU SESSION STATE
@@ -285,10 +540,10 @@ today_maroc = get_today_morocco()
 # ---------------------------------------------------------
 with st.sidebar:
     st.markdown("""
-        <div style="text-align: center; padding: 10px 0 16px 0;">
+        <div style="text-align: center; padding: 12px 0 18px 0; border-bottom: 1px solid #E5E7EB; margin-bottom: 8px;">
             <div style="font-size: 32px; margin-bottom: 2px;">🇲🇦 💼</div>
-            <div style="font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px;">SmartCash AI</div>
-            <div style="font-size: 11px; color: #93C5FD; font-weight: 600;">Votre trésorerie, anticipée intelligemment</div>
+            <div style="font-size: 20px; font-weight: 800; color: #1F2937; letter-spacing: -0.3px;">SmartCash AI</div>
+            <div style="font-size: 11px; color: #2563EB; font-weight: 600;">Votre trésorerie, anticipée intelligemment</div>
             <div style="margin-top: 6px;" class="morocco-badge">Devise : Dirham Marocain (MAD)</div>
         </div>
     """, unsafe_allow_html=True)
@@ -352,7 +607,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown(f"""
-        <div style="font-size: 11px; color: #94A3B8; text-align: center; line-height: 1.4;">
+        <div style="font-size: 11px; color: #64748B; text-align: center; line-height: 1.4;">
             <strong>SmartCash AI 🇲🇦 v2.0</strong><br>
             Fuseau : <code>Africa/Casablanca</code><br>
             Date : <strong>{now_maroc.strftime('%d/%m/%Y %H:%M')}</strong><br>
@@ -425,7 +680,7 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Solde Actuel</div>
-                <div class="kpi-value" style="color: {'#FFFFFF' if kpis_view['solde_actuel'] >= 0 else '#EF4444'};">
+                <div class="kpi-value" style="color: {'#1F2937' if kpis_view['solde_actuel'] >= 0 else '#DC2626'};">
                     {format_dh(kpis_view['solde_actuel'])}
                 </div>
                 <div class="kpi-sub">Liquidités en banque</div>
@@ -436,10 +691,10 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Encaissements</div>
-                <div class="kpi-value" style="color: #22C55E;">
+                <div class="kpi-value" style="color: #15803D;">
                     +{format_dh(kpis_view['total_encaissements'])}
                 </div>
-                <div class="kpi-sub" style="color: #22C55E;">Recettes & Ventes TTC</div>
+                <div class="kpi-sub" style="color: #15803D;">Recettes & Ventes TTC</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -447,10 +702,10 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Décaissements</div>
-                <div class="kpi-value" style="color: #EF4444;">
+                <div class="kpi-value" style="color: #DC2626;">
                     -{format_dh(kpis_view['total_decaissements'])}
                 </div>
-                <div class="kpi-sub" style="color: #EF4444;">Sorties & Charges TTC</div>
+                <div class="kpi-sub" style="color: #DC2626;">Sorties & Charges TTC</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -458,10 +713,10 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Solde Prévisionnel</div>
-                <div class="kpi-value" style="color: {'#3B82F6' if kpis_view['solde_previsionnel'] >= 0 else '#EF4444'};">
+                <div class="kpi-value" style="color: {'#2563EB' if kpis_view['solde_previsionnel'] >= 0 else '#DC2626'};">
                     {format_dh(kpis_view['solde_previsionnel'])}
                 </div>
-                <div class="kpi-sub" style="color: #93C5FD;">Horizon {forecast_df.shape[0] if forecast_df is not None else 0}j (IA)</div>
+                <div class="kpi-sub" style="color: #2563EB;">Horizon {forecast_df.shape[0] if forecast_df is not None else 0}j (IA)</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -473,10 +728,10 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Créances Clients (BFR)</div>
-                <div class="kpi-value" style="color: #38BDF8;">
+                <div class="kpi-value" style="color: #2563EB;">
                     {format_dh(kpis_view['creances_clients'])}
                 </div>
-                <div class="kpi-sub" style="color: {'#EF4444' if kpis_view['creances_echues'] > 0 else '#94A3B8'};">
+                <div class="kpi-sub" style="color: {'#DC2626' if kpis_view['creances_echues'] > 0 else '#64748B'};">
                     Dont échues : {format_dh(kpis_view['creances_echues'])}
                 </div>
             </div>
@@ -486,10 +741,10 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Dettes Fournisseurs</div>
-                <div class="kpi-value" style="color: #F87171;">
+                <div class="kpi-value" style="color: #DC2626;">
                     {format_dh(kpis_view['dettes_fournisseurs'])}
                 </div>
-                <div class="kpi-sub" style="color: {'#EF4444' if kpis_view['dettes_echues'] > 0 else '#94A3B8'};">
+                <div class="kpi-sub" style="color: {'#DC2626' if kpis_view['dettes_echues'] > 0 else '#64748B'};">
                     Dont échues : {format_dh(kpis_view['dettes_echues'])}
                 </div>
             </div>
@@ -499,7 +754,7 @@ if menu_choice == "📊 Tableau de bord":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Paiements à venir (30j)</div>
-                <div class="kpi-value" style="color: #FBBF24;">
+                <div class="kpi-value" style="color: #D97706;">
                     {format_dh(kpis_view['paiements_a_venir'])}
                 </div>
                 <div class="kpi-sub">Échéances charges & achats</div>
@@ -524,7 +779,7 @@ if menu_choice == "📊 Tableau de bord":
     # Diagnostic rédigé en langage financier
     st.info(fc.generate_executive_summary(kpis_view, adv_global, alerts_global))
 
-    # Graphiques Plotly Dark Navy
+    # Graphiques Plotly Thème Professionnel Clair
     daily_hist = fc.compute_daily_cashflow(filtered_df, initial_balance=initial_bal)
 
     col_g1, col_g2 = st.columns([7, 5])
@@ -540,7 +795,7 @@ if menu_choice == "📊 Tableau de bord":
                 y=daily_hist["solde_cumule"],
                 mode="lines",
                 name="Solde Réalisé (DH)",
-                line=dict(color="#3B82F6", width=2.8),
+                line=dict(color="#2563EB", width=2.8),
                 hovertemplate="<b>Date</b>: %{x|%d/%m/%Y}<br><b>Solde</b>: %{y:,.2f} DH<extra></extra>"
             ))
 
@@ -559,7 +814,7 @@ if menu_choice == "📊 Tableau de bord":
                 y=raccord_y,
                 mode="lines+markers",
                 name="Solde Prévu IA (DH)",
-                line=dict(color="#A78BFA", width=2.6, dash="dash"),
+                line=dict(color="#7C3AED", width=2.6, dash="dash"),
                 marker=dict(size=4),
                 hovertemplate="<b>Date</b>: %{x|%d/%m/%Y}<br><b>Solde prévisionnel</b>: %{y:,.2f} DH<extra></extra>"
             ))
@@ -568,30 +823,30 @@ if menu_choice == "📊 Tableau de bord":
         fig_trend.add_hline(
             y=sec_thresh,
             line_dash="dot",
-            line_color="#F59E0B",
+            line_color="#D97706",
             annotation_text=f"Seuil de sécurité ({format_dh(sec_thresh)})",
             annotation_position="bottom right",
-            annotation_font_color="#FBBF24"
+            annotation_font_color="#D97706"
         )
         
         # Ligne de découvert
         fig_trend.add_hline(
             y=0,
             line_dash="solid",
-            line_color="#EF4444",
+            line_color="#DC2626",
             annotation_text="Découvert bancaire (0 DH)",
             annotation_position="top left",
-            annotation_font_color="#EF4444"
+            annotation_font_color="#DC2626"
         )
 
         fig_trend.update_layout(
             height=390,
             margin=dict(l=20, r=20, t=25, b=20),
-            paper_bgcolor="#172A4D",
-            plot_bgcolor="#0B1630",
-            font=dict(color="#F1F5F9"),
-            xaxis=dict(gridcolor="#23385E", zerolinecolor="#23385E"),
-            yaxis=dict(gridcolor="#23385E", zerolinecolor="#23385E", ticksuffix=" DH"),
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#F8FAFC",
+            font=dict(color="#1F2937"),
+            xaxis=dict(gridcolor="#E5E7EB", zerolinecolor="#E5E7EB"),
+            yaxis=dict(gridcolor="#E5E7EB", zerolinecolor="#E5E7EB", ticksuffix=" DH"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         st.plotly_chart(fig_trend, use_container_width=True)
@@ -615,8 +870,9 @@ if menu_choice == "📊 Tableau de bord":
             fig_pie.update_layout(
                 height=390,
                 margin=dict(l=10, r=10, t=10, b=10),
-                paper_bgcolor="#172A4D",
-                font=dict(color="#F1F5F9"),
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#FFFFFF",
+                font=dict(color="#1F2937"),
                 showlegend=False
             )
             st.plotly_chart(fig_pie, use_container_width=True)
@@ -638,25 +894,25 @@ if menu_choice == "📊 Tableau de bord":
         x=flux_monthly["mois"],
         y=flux_monthly["Encaissement"],
         name="Encaissements (DH)",
-        marker_color="#22C55E",
+        marker_color="#15803D",
         hovertemplate="<b>%{x}</b><br>Encaissements: %{y:,.2f} DH<extra></extra>"
     ))
     fig_bars.add_trace(go.Bar(
         x=flux_monthly["mois"],
         y=flux_monthly["Décaissement"],
         name="Décaissements (DH)",
-        marker_color="#EF4444",
+        marker_color="#DC2626",
         hovertemplate="<b>%{x}</b><br>Décaissements: %{y:,.2f} DH<extra></extra>"
     ))
     fig_bars.update_layout(
         barmode="group",
         height=320,
         margin=dict(l=20, r=20, t=20, b=20),
-        paper_bgcolor="#172A4D",
-        plot_bgcolor="#0B1630",
-        font=dict(color="#F1F5F9"),
-        xaxis=dict(title="Mois", gridcolor="#23385E"),
-        yaxis=dict(title="Volume (DH)", gridcolor="#23385E", ticksuffix=" DH"),
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#F8FAFC",
+        font=dict(color="#1F2937"),
+        xaxis=dict(title="Mois", gridcolor="#E5E7EB"),
+        yaxis=dict(title="Volume (DH)", gridcolor="#E5E7EB", ticksuffix=" DH"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     st.plotly_chart(fig_bars, use_container_width=True)
@@ -945,9 +1201,9 @@ elif menu_choice == "📥 Importation de données":
                 )
 
         st.markdown("""
-            <div style="background-color: #172A4D; border: 1px solid #23385E; border-radius: 8px; padding: 14px; margin-top: 15px; font-size: 13px;">
+            <div style="background-color: #F8FAFC; border: 1px solid #E5E7EB; color: #1F2937; border-radius: 8px; padding: 14px; margin-top: 15px; font-size: 13px;">
                 <strong>Colonnes prises en charge :</strong>
-                <ul>
+                <ul style="margin-top: 8px; margin-bottom: 0;">
                     <li><code>Date</code> (Date de facturation / opération)</li>
                     <li><code>Date Échéance</code> (Date limite de paiement)</li>
                     <li><code>Libellé</code> & <code>Partenaire</code> (Client ou Fournisseur)</li>
@@ -1056,7 +1312,7 @@ elif menu_choice == "🤖 Prévision IA (MAD)":
         else:
             st.success(f"✅ Modèle entraîné : **{model_info['name']}** sur l'historique réalisé.")
 
-        # Graphique principal Plotly Dark
+        # Graphique principal Plotly Thème Clair
         st.markdown("### 📊 Trajectoire Prévisionnelle & Bornes d'Incertitude (DH)")
         daily_hist = fc.compute_daily_cashflow(df_current[df_current["statut"] == "Réalisé"], initial_balance=initial_bal)
 
@@ -1068,7 +1324,7 @@ elif menu_choice == "🤖 Prévision IA (MAD)":
                 y=daily_hist["solde_cumule"],
                 mode="lines",
                 name="Historique Réalisé (DH)",
-                line=dict(color="#3B82F6", width=2.8)
+                line=dict(color="#2563EB", width=2.8)
             ))
 
         # Intervalle de confiance
@@ -1076,7 +1332,7 @@ elif menu_choice == "🤖 Prévision IA (MAD)":
             x=list(fc_df["date"]) + list(fc_df["date"])[::-1],
             y=list(fc_df["borne_sup"]) + list(fc_df["borne_inf"])[::-1],
             fill='toself',
-            fillcolor='rgba(167, 139, 250, 0.18)',
+            fillcolor='rgba(37, 99, 235, 0.12)',
             line=dict(color='rgba(255,255,255,0)'),
             name="Intervalle d'Incertitude (80%)",
             showlegend=True
@@ -1096,21 +1352,21 @@ elif menu_choice == "🤖 Prévision IA (MAD)":
             y=ry,
             mode="lines+markers",
             name="Prévision Solde IA (DH)",
-            line=dict(color="#A78BFA", width=3, dash="dash"),
+            line=dict(color="#7C3AED", width=3, dash="dash"),
             marker=dict(size=4)
         ))
 
-        fig_pred.add_hline(y=sec_thresh, line_dash="dot", line_color="#F59E0B", annotation_text=f"Seuil de sécurité ({format_dh(sec_thresh)})", annotation_font_color="#FBBF24")
-        fig_pred.add_hline(y=0, line_dash="solid", line_color="#EF4444", annotation_text="Découvert (0 DH)", annotation_font_color="#EF4444")
+        fig_pred.add_hline(y=sec_thresh, line_dash="dot", line_color="#D97706", annotation_text=f"Seuil de sécurité ({format_dh(sec_thresh)})", annotation_font_color="#D97706")
+        fig_pred.add_hline(y=0, line_dash="solid", line_color="#DC2626", annotation_text="Découvert (0 DH)", annotation_font_color="#DC2626")
 
         fig_pred.update_layout(
             height=420,
             margin=dict(l=20, r=20, t=25, b=20),
-            paper_bgcolor="#172A4D",
-            plot_bgcolor="#0B1630",
-            font=dict(color="#F1F5F9"),
-            xaxis=dict(gridcolor="#23385E"),
-            yaxis=dict(gridcolor="#23385E", ticksuffix=" DH"),
+            paper_bgcolor="#FFFFFF",
+            plot_bgcolor="#F8FAFC",
+            font=dict(color="#1F2937"),
+            xaxis=dict(gridcolor="#E5E7EB"),
+            yaxis=dict(gridcolor="#E5E7EB", ticksuffix=" DH"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         st.plotly_chart(fig_pred, use_container_width=True)
@@ -1164,9 +1420,11 @@ elif menu_choice == "🤖 Prévision IA (MAD)":
             fig_imp.update_layout(
                 height=320,
                 margin=dict(l=20, r=20, t=10, b=10),
-                paper_bgcolor="#172A4D",
-                plot_bgcolor="#0B1630",
-                font=dict(color="#F1F5F9"),
+                paper_bgcolor="#FFFFFF",
+                plot_bgcolor="#F8FAFC",
+                font=dict(color="#1F2937"),
+                xaxis=dict(gridcolor="#E5E7EB"),
+                yaxis=dict(gridcolor="#E5E7EB"),
                 coloraxis_showscale=False
             )
             st.plotly_chart(fig_imp, use_container_width=True)
@@ -1215,7 +1473,7 @@ elif menu_choice == "⚠️ Alertes & Recommandations":
                             {grav.upper()}
                         </span>
                     </div>
-                    <div style="font-size: 12px; color: #94A3B8; margin-bottom: 8px;">
+                    <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">
                         <strong>Échéance concernée :</strong> {alert['date']}
                     </div>
                     <div class="alert-body">
@@ -1254,14 +1512,14 @@ elif menu_choice == "📈 Analyse & Rapports":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Dépense Journalière Moyenne</div>
-                <div class="kpi-value">{format_dh(adv_global.get('avg_daily_burn', 0))}</div>
+                <div class="kpi-value" style="color: #1F2937;">{format_dh(adv_global.get('avg_daily_burn', 0))}</div>
                 <div class="kpi-sub">Burn Rate quotidien</div>
             </div>
         """, unsafe_allow_html=True)
 
     with rc2:
         runway_val = adv_global.get('runway_days', 0)
-        runway_color = "#22C55E" if runway_val >= 60 else ("#F59E0B" if runway_val >= 30 else "#EF4444")
+        runway_color = "#15803D" if runway_val >= 60 else ("#D97706" if runway_val >= 30 else "#DC2626")
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Autonomie Financière</div>
@@ -1272,7 +1530,7 @@ elif menu_choice == "📈 Analyse & Rapports":
 
     with rc3:
         cov_val = adv_global.get('coverage_ratio', 1.0)
-        cov_color = "#22C55E" if cov_val >= 1.10 else ("#F59E0B" if cov_val >= 1.0 else "#EF4444")
+        cov_color = "#15803D" if cov_val >= 1.10 else ("#D97706" if cov_val >= 1.0 else "#DC2626")
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">Ratio de Couverture</div>
@@ -1285,7 +1543,7 @@ elif menu_choice == "📈 Analyse & Rapports":
         st.markdown(f"""
             <div class="kpi-card">
                 <div class="kpi-label">TVA Nette Due à la DGI</div>
-                <div class="kpi-value" style="color: #F87171;">{format_dh(kpis_global.get('tva_due', 0))}</div>
+                <div class="kpi-value" style="color: #DC2626;">{format_dh(kpis_global.get('tva_due', 0))}</div>
                 <div class="kpi-sub">TVA Collectée - Déductible</div>
             </div>
         """, unsafe_allow_html=True)
