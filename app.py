@@ -1174,6 +1174,43 @@ elif menu_choice == "📥 Importation de données":
         </div>
     """, unsafe_allow_html=True)
 
+    # Affichage du résumé d'importation réussi (si existant)
+    if st.session_state.get("last_import_summary"):
+        summ = st.session_state["last_import_summary"]
+        st.markdown(f"""
+            <div style="background-color: #FFFFFF; border: 1px solid #BBF7D0; border-left: 5px solid #15803D; border-radius: 10px; padding: 18px 22px; margin-bottom: 22px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-weight: 800; font-size: 16px; color: #15803D;">🎉 Résumé de la dernière importation</span>
+                    <span style="font-size: 12px; color: #64748B; background: #F3F6FA; padding: 4px 10px; border-radius: 6px;">Mode : <strong>{summ.get('mode', 'Intégration')}</strong></span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                    <div class="kpi-card" style="padding: 12px 14px; border-left: 3px solid #15803D;">
+                        <div class="kpi-label" style="color: #15803D;">Encaissements importés</div>
+                        <div class="kpi-value" style="color: #15803D; font-size: 20px;">{summ['nb_enc']}</div>
+                        <div class="kpi-sub" style="color: #15803D;">+{format_dh(summ['tot_enc'])}</div>
+                    </div>
+                    <div class="kpi-card" style="padding: 12px 14px; border-left: 3px solid #DC2626;">
+                        <div class="kpi-label" style="color: #DC2626;">Décaissements importés</div>
+                        <div class="kpi-value" style="color: #DC2626; font-size: 20px;">{summ['nb_dec']}</div>
+                        <div class="kpi-sub" style="color: #DC2626;">-{format_dh(summ['tot_dec'])}</div>
+                    </div>
+                    <div class="kpi-card" style="padding: 12px 14px; border-left: 3px solid #D97706;">
+                        <div class="kpi-label" style="color: #D97706;">Doublons ignorés</div>
+                        <div class="kpi-value" style="color: #D97706; font-size: 20px;">{summ['nb_doublons']}</div>
+                        <div class="kpi-sub">Non réimportés</div>
+                    </div>
+                    <div class="kpi-card" style="padding: 12px 14px; border-left: 3px solid #64748B;">
+                        <div class="kpi-label" style="color: #64748B;">Lignes rejetées</div>
+                        <div class="kpi-value" style="color: #64748B; font-size: 20px;">{summ['nb_rejetes']}</div>
+                        <div class="kpi-sub">Erreurs de format</div>
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        if st.button("✕ Fermer ce résumé", key="btn_close_import_summary"):
+            st.session_state["last_import_summary"] = None
+            st.rerun()
+
     col_imp1, col_imp2 = st.columns([5, 3])
 
     with col_imp2:
@@ -1224,8 +1261,8 @@ elif menu_choice == "📥 Importation de données":
 
         if uploaded_file is not None:
             with st.spinner("Analyse et validation de conformité marocaine en cours..."):
-                valid_df, errors, duplicates = dm.parse_and_validate_import(
-                    uploaded_file, uploaded_file.name
+                valid_df, errors, duplicates, stats = dm.parse_and_validate_import(
+                    uploaded_file, uploaded_file.name, existing_df=st.session_state.get("transactions_df")
                 )
 
             if errors:
@@ -1237,21 +1274,68 @@ elif menu_choice == "📥 Importation de données":
 
             if valid_df is not None and not valid_df.empty:
                 st.success(f"✅ **{len(valid_df)} opération(s) valide(s)** détectée(s) !")
-                if duplicates > 0:
-                    st.warning(f"ℹ️ {duplicates} doublon(s) potentiel(s) détecté(s).")
 
+                # Métriques de prévisualisation détaillées
+                sc1, sc2, sc3, sc4 = st.columns(4)
+                with sc1:
+                    st.markdown(f"""
+                        <div class="kpi-card" style="padding: 10px 12px; border-left: 3px solid #15803D;">
+                            <div class="kpi-label" style="color: #15803D; font-size: 10.5px;">Encaissements</div>
+                            <div class="kpi-value" style="color: #15803D; font-size: 18px;">{stats['nb_encaissements']}</div>
+                            <div class="kpi-sub" style="color: #15803D;">+{format_dh(stats['total_encaissements'])}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                with sc2:
+                    st.markdown(f"""
+                        <div class="kpi-card" style="padding: 10px 12px; border-left: 3px solid #DC2626;">
+                            <div class="kpi-label" style="color: #DC2626; font-size: 10.5px;">Décaissements</div>
+                            <div class="kpi-value" style="color: #DC2626; font-size: 18px;">{stats['nb_decaissements']}</div>
+                            <div class="kpi-sub" style="color: #DC2626;">-{format_dh(stats['total_decaissements'])}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                with sc3:
+                    st.markdown(f"""
+                        <div class="kpi-card" style="padding: 10px 12px; border-left: 3px solid #D97706;">
+                            <div class="kpi-label" style="color: #D97706; font-size: 10.5px;">Doublons ignorés</div>
+                            <div class="kpi-value" style="color: #D97706; font-size: 18px;">{duplicates}</div>
+                            <div class="kpi-sub">Non réimportés</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                with sc4:
+                    st.markdown(f"""
+                        <div class="kpi-card" style="padding: 10px 12px; border-left: 3px solid #64748B;">
+                            <div class="kpi-label" style="color: #64748B; font-size: 10.5px;">Rejetées</div>
+                            <div class="kpi-value" style="color: #64748B; font-size: 18px;">{len(errors)}</div>
+                            <div class="kpi-sub">Erreurs format</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
                 st.markdown("#### Aperçu des données à intégrer (Montants en DH) :")
                 preview_show = valid_df.copy()
                 preview_show["TTC (DH)"] = preview_show["montant"].apply(format_dh)
+                preview_show["Sens"] = preview_show["type"].apply(
+                    lambda t: "🟢 Encaissement (+)" if t == "Encaissement" else "🔴 Décaissement (-)"
+                )
+                disp_cols = ["date", "date_echeance", "libelle", "partenaire", "Sens", "TTC (DH)", "statut"]
+                rename_map = {
+                    "date": "Date",
+                    "date_echeance": "Échéance",
+                    "libelle": "Libellé",
+                    "partenaire": "Partenaire",
+                    "Sens": "Type Opération",
+                    "TTC (DH)": "Montant TTC",
+                    "statut": "Statut"
+                }
                 st.dataframe(
-                    preview_show[["date", "date_echeance", "libelle", "partenaire", "type", "TTC (DH)", "statut"]].head(8),
+                    preview_show[disp_cols].rename(columns=rename_map),
                     use_container_width=True
                 )
 
                 st.markdown("---")
                 mode_import = st.radio(
                     "Mode d'intégration :",
-                    ["Fusionner avec les données existantes (Conserve l'historique)", "Remplacer entièrement les données existantes"]
+                    ["Fusionner avec les données existantes (Ignore les doublons déjà présents)", "Remplacer entièrement les données existantes"]
                 )
 
                 if st.button("🚀 Confirmer l'intégration dans SmartCash AI", type="primary", use_container_width=True):
@@ -1264,7 +1348,16 @@ elif menu_choice == "📥 Importation de données":
                     dm.save_transactions(final_df)
                     st.session_state["transactions_df"] = final_df
                     st.session_state["forecast_cache"] = None
-                    st.success(f"🎉 {len(valid_df)} opérations importées avec succès !")
+                    st.session_state["last_import_summary"] = {
+                        "nb_enc": stats["nb_encaissements"],
+                        "tot_enc": stats["total_encaissements"],
+                        "nb_dec": stats["nb_decaissements"],
+                        "tot_dec": stats["total_decaissements"],
+                        "nb_doublons": duplicates,
+                        "nb_rejetes": len(errors),
+                        "total": len(valid_df),
+                        "mode": "Fusion avec l'existant" if "Fusionner" in mode_import else "Remplacement complet"
+                    }
                     st.rerun()
 
 
